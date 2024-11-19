@@ -150,9 +150,6 @@ function switchContext(name) {
     // Update active context header
     document.getElementById('active-context').textContent = name || 'No Context Selected';
     
-    // Reset file explorer path
-    resetFileExplorer();
-    
     // Update visual state of all folders
     document.querySelectorAll('.context-folder').forEach(folder => {
         const isActive = folder.dataset.name === name;
