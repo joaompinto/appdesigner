@@ -1,0 +1,325 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+:root {
+    --designer-width: 300px;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100%;
+    position: relative;
+    /* Remove user-select: none */
+}
+
+.main-column {
+    min-width: 200px;
+    padding: 0;
+    box-sizing: border-box;
+    height: 100%;
+    overflow: hidden; /* Changed from overflow-y: auto */
+}
+
+#main-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+    overflow-y: overlay; /* Change from auto to overlay */
+}
+
+.side-column {
+    min-width: 200px;
+    padding: 0;
+    background-color: #2f3640;
+    color: #00ff00;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.side-column h1 {
+    margin: 0;
+    padding: 10px;
+    color: #fff;
+    flex: 0 0 auto;
+}
+
+.side-column h2 {
+    margin: 0;
+    padding: 10px;
+    color: #fff;
+    font-size: 1em;
+    background-color: #1e272e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.refresh-button {
+    background: none;
+    border: none;
+    color: #4a9eff;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refresh-button:hover {
+    background-color: rgba(74, 158, 255, 0.1);
+}
+
+.refresh-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.logs-section {
+    flex: 1;  /* Keep smaller ratio for logs */
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;  /* Add minimum height */
+}
+
+#server-logs {
+    padding-bottom: 10px;
+    overflow-y: auto;
+    font-size: 0.9em;
+}
+
+#server-logs .terminal-line {
+    padding-left: 5px;
+}
+
+#server-logs .terminal-line::before {
+    content: none;
+}
+
+.instructions-section {
+    flex: 3;  /* Increased flex ratio since history section is removed */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+    border-bottom: 2px solid #1e272e;
+}
+
+/* Removed .resize-handle styles */
+
+.terminal-output {
+    margin: 0;
+    padding: 10px;
+    background-color: #1a1f24;
+    border-radius: 0;
+    min-height: 0;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 50px; /* Increase padding to prevent overlap */
+    flex: 1;
+    color: #e0e0e0;
+    box-sizing: border-box;
+    width: 100%;
+    overflow-x: hidden;
+    user-select: text; /* Add this */
+}
+
+#instructions-output {
+    padding-bottom: 60px; /* Increase padding to ensure more space */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+#terminal-output {
+    margin: 0;
+    padding: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.terminal-input {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: calc(100% - 20px);
+    margin: 10px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 5px 10px;
+    border-radius: 3px;
+    box-sizing: border-box;
+    max-width: calc(100% - 20px);
+}
+
+.terminal-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.terminal-line {
+    margin: 2px 0;
+    padding-left: 0;  /* Remove padding as it's moved to wrapper */
+    position: relative;
+    color: #e0e0e0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    width: 100%;
+    box-sizing: border-box;
+    user-select: text; /* Add this */
+    cursor: text; /* Add this */
+}
+
+.prompt::before {
+    content: "$ ";
+    color: #00ff00;
+}
+
+.terminal-line::before {
+    content: "$";
+    position: absolute;
+    left: 0;
+    color: #00ff00;
+}
+
+.command-line {
+    padding-left: 15px;  /* Add specific padding for command lines */
+    position: relative;
+}
+
+.command-line::before {
+    content: ">";
+    color: #00ff00;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.response-line {
+    color: #888;
+}
+
+.system-message {
+    color: #4a9eff;
+    font-style: italic;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+p {
+    color: #666;
+    line-height: 1.6;
+}
+
+.button-container {
+    padding: 0 10px 10px 10px;
+}
+
+.nav-button {
+    background-color: #1a1f24;
+    color: #e0e0e0;
+    border: 1px solid #00ff00;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.nav-button:hover {
+    background-color: #2a2f34;
+}
+
+/* Removed history section styles */
+/* .history-section { ... } */
+/* #history-logs { ... } */
+/* .history-list { ... } */
+/* .history-item { ... } */
+/* .history-item-header { ... } */
+/* .history-item-filename { ... } */
+/* .history-item-timestamp { ... } */
+/* .history-item-instruction { ... } */
+/* .history-item-details { ... } */
+/* .modal { ... } */
+/* .modal-content { ... } */
+/* .modal-close { ... } */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1a1f24;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 80%;
+    max-height: 80vh;
+    overflow-y: auto;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #888;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.info-icon {
+    display: inline-flex;
+    cursor: pointer;
+    color: #4a9eff;
+    padding: 2px;
+    margin-right: 8px;  /* Changed from margin-left */
+    border-radius: 3px;
+    transition: background-color 0.2s;
+    align-self: flex-start;  /* Add this */
+}
+
+.info-icon:hover {
+    background-color: rgba(74, 158, 255, 0.1);
+}
+
+.response-line-wrapper {
+    display: flex;
+    align-items: flex-start;
+    padding-left: 15px;  /* Move padding from terminal-line */
+}
