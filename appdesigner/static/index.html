@@ -24,18 +24,20 @@
                     </button>
                     Instructions
                 </h2>
-                <div class="terminal">
-                    <div class="terminal-output" id="terminal-output"></div>
-                    <div class="terminal-input-container">
-                        <input type="text" class="terminal-input" id="terminal-input" 
+                <div class="instructions-display">
+                    <div class="instructions-output" id="instructions-output"></div>
+                    <div class="input-container">
+                        <input type="text" class="command-input" id="terminal-input" 
                                placeholder="Type your request..." 
                                autofocus>
                     </div>
                 </div>
             </div>
-            <div class="logs-section">
+            <div class="logs-section collapsed">
                 <h2>Server Logs</h2>
-                <div class="terminal-output" id="server-logs"></div>
+                <div class="logs-container" id="server-logs">
+                    <!-- Logs will be inserted here -->
+                </div>
             </div>
         </div>
     </div>

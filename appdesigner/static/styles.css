@@ -65,6 +65,11 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
+}
+
+.side-column h2:hover {
+    background-color: #242a30;
 }
 
 .refresh-button {
@@ -90,11 +95,55 @@ body {
 }
 
 .logs-section {
-    flex: 1;  /* Take remaining space */
+    flex: 0 0 auto;  /* Change from flex: 1 */
     display: flex;
     flex-direction: column;
-    margin-top: 0;
+    margin-top: auto;  /* Add this to ensure it stays at bottom */
     overflow: hidden;
+    background-color: #1a1f24;
+    border-top: 1px solid #2f3640;
+    transition: flex 0.3s ease;
+}
+
+.logs-section.collapsed {
+    flex: 0 0 auto;
+    min-height: fit-content;
+}
+
+/* Add this new rule for expanded state */
+.logs-section:not(.collapsed) {
+    flex: 0 0 50%;
+}
+
+/* Update instructions section when logs are expanded */
+.logs-section:not(.collapsed) ~ .instructions-section {
+    flex: 0 0 50%;
+}
+
+.logs-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: #e0e0e0;
+    background-color: #1a1f24;
+    transition: all 0.3s ease;
+    max-height: calc(100vh - 200px);
+}
+
+.logs-section.collapsed .logs-container {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.logs-container .log-line {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 2px 0;
+    padding: 1px 0;
 }
 
 #server-logs {
@@ -102,23 +151,37 @@ body {
     overflow-y: auto;
     font-size: 0.9em;
     padding: 10px;
+    background-color: #1a1f24;
+    font-family: 'Courier New', monospace;
+    color: #e0e0e0;
+    white-space: pre-wrap;
 }
 
 #server-logs .terminal-line {
-    padding-left: 5px;
+    color: inherit; /* Add this */
+    padding-left: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.4;
+    display: block; /* Add this */
 }
 
-#server-logs .terminal-line::before {
-    content: none;
+#server-logs .response-line-wrapper {
+    display: flex;
+    align-items: flex-start;
+    padding-left: 15px;
+    margin: 2px 0;
+    color: inherit; /* Add this */
 }
 
 .instructions-section {
-    flex: 0 0 50%;  /* Fixed height ratio */
+    flex: 1;  /* Change from flex: 0 0 50% to flex: 1 */
     display: flex;
     flex-direction: column;
     position: relative;
     border-bottom: 2px solid #1e272e;
-    margin-bottom: 0;
+    transition: flex 0.3s ease;
+    margin-bottom: auto;  /* Add this to push logs section to bottom */
     overflow: hidden;
 }
 
@@ -190,19 +253,10 @@ body {
     box-sizing: border-box;
     user-select: text; /* Add this */
     cursor: text; /* Add this */
+    display: block; /* Add this */
 }
 
-.prompt::before {
-    content: "$ ";
-    color: #00ff00;
-}
-
-.terminal-line::before {
-    content: "$";
-    position: absolute;
-    left: 0;
-    color: #00ff00;
-}
+/* Remove .prompt::before and .terminal-line::before rules */
 
 .command-line {
     padding-left: 15px;  /* Add specific padding for command lines */
@@ -210,7 +264,7 @@ body {
 }
 
 .command-line::before {
-    content: ">";
+    content: ">";  /* Changed from "$" to ">" */
     color: #00ff00;
     position: absolute;
     left: 0;
@@ -325,49 +379,58 @@ p {
     display: flex;
     align-items: flex-start;
     padding-left: 15px;  /* Move padding from terminal-line */
+    margin: 2px 0;
+    width: 100%;
+    color: #e0e0e0;
 }
 
-.terminal {
+.instructions-display {
     display: flex;
     flex-direction: column;
     height: 100%;
     background: #1a1f24;
     position: relative;
     padding: 10px;
-    margin: 0; /* Ensure no margins */
 }
 
-.terminal-output {
+.instructions-output {
     flex: 1;
     overflow-y: auto;
-    margin-bottom: 40px; /* Space for input box */
-    padding: 5px;
+    padding: 10px;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 40px;
 }
 
-.terminal-input-container {
+.input-container {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     padding: 10px;
     background: #1a1f24;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.terminal-input {
+.command-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
     border: none;
     color: #fff;
     font-family: monospace;
-    padding: 5px 10px;
-    border-radius: 3px;
+    padding: 8px 12px;
+    border-radius: 4px;
     outline: none;
 }
 
-/* Remove duplicate terminal-line styles */
-.terminal-line {
-    margin: 2px 0;
-    word-wrap: break-word;
-    color: #e0e0e0;
-    white-space: pre-wrap;
+.command-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Remove old terminal styles */
+.terminal,
+.terminal-output,
+.terminal-input-container,
+.terminal-input {
+    display: none;
 }

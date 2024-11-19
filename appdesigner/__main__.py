@@ -20,6 +20,28 @@ logger = logging.getLogger(__name__)
 app = typer.Typer()
 console = Console()
 
+class ProcessManager:
+    def __init__(self):
+        self.processes = []
+        self.running = True
+        signal.signal(signal.SIGINT, self.handle_shutdown)
+        signal.signal(signal.SIGTERM, self.handle_shutdown)
+        
+    def add_process(self, process):
+        self.processes.append(process)
+        
+    def handle_shutdown(self, signum, frame):
+        console.log("\n[bold red]Force terminating processes...[/bold red]")
+        self.running = False
+        for process in self.processes:
+            if process.poll() is None:  # If process is still running
+                try:
+                    process.kill()  # Force kill immediately
+                    console.log(f"[red]Killed process {process.pid}[/red]")
+                except Exception as e:
+                    console.log(f"[red]Error killing process: {e}[/red]")
+        sys.exit(1)  # Exit with error code to ensure everything stops
+
 def copy_starter_template(target_dir: Path) -> bool:
     starter_dir = Path(__file__).parent.parent / 'starter'
     if not starter_dir.exists():
@@ -33,13 +55,15 @@ def copy_starter_template(target_dir: Path) -> bool:
         console.log(f"[bold red]Failed to create app directory: {e}[/bold red]")
         return False
 
-def start_managed_app(managed_app_dir: Path, port: int, logs_dir: Path):
+def start_managed_app(process_manager, managed_app_dir: Path, port: int, logs_dir: Path):
     stdout_file = logs_dir / "managed_app_stdout.log"
     stderr_file = logs_dir / "managed_app_stderr.log"
     
-    while True:
+    while process_manager.running:
         console.log(f"[bold blue]Starting managed app from directory: {managed_app_dir} on port {port}[/bold blue]")
-        console.log(f"[bold blue]Logs will be written to: {logs_dir}[/bold blue]")
+        console.log(f"[blue]Log files:[/blue]")
+        console.log(f"  [dim]stdout:[/dim] {stdout_file}")
+        console.log(f"  [dim]stderr:[/dim] {stderr_file}")
         
         with open(stdout_file, 'w') as stdout_f, open(stderr_file, 'w') as stderr_f:
             process = subprocess.Popen(
@@ -48,25 +72,17 @@ def start_managed_app(managed_app_dir: Path, port: int, logs_dir: Path):
                 stderr=stderr_f,
                 cwd=managed_app_dir
             )
-            process.wait()
+            process_manager.add_process(process)
             
-            if stdout_file.exists():
-                with open(stdout_file) as f:
-                    output = f.read()
-                    if output:
-                        console.log(f"[bold green]Managed app output: {output}[/bold green]")
+            while process_manager.running and process.poll() is None:
+                time.sleep(1)
             
-            if stderr_file.exists():
-                with open(stderr_file) as f:
-                    errors = f.read()
-                    if errors:
-                        console.log(f"[bold red]Managed app error: {errors}[/bold red]")
-        
-        time.sleep(5)
+            if not process_manager.running:
+                break
 
-def start_designer_app(port: int, managed_app_dir: Path, logs_dir: Path):
+def start_designer_app(process_manager, port: int, managed_app_dir: Path, logs_dir: Path):
     script_dir = Path(__file__).parent
-    while True:
+    while process_manager.running:
         console.log(f"[bold blue]Starting designer app from directory: {script_dir} on port {port}[/bold blue]")
         process = subprocess.Popen(
             ["uvicorn", "main:app", "--reload", "--port", str(port)],
@@ -77,39 +93,49 @@ def start_designer_app(port: int, managed_app_dir: Path, logs_dir: Path):
             },
             cwd=script_dir
         )
-        process.wait()
-        if process.returncode != 0:
-            console.log("[bold red]Designer app failed to start[/bold red]")
-            sys.exit(1)
-        time.sleep(5)
+        process_manager.add_process(process)
+        
+        while process_manager.running and process.poll() is None:
+            time.sleep(1)
+            
+        if not process_manager.running:
+            break
+
+def get_logs_dir() -> Path:
+    """Create and return a temporary directory for logs."""
+    logs_dir = Path(tempfile.mkdtemp(prefix="appdesigner_logs_"))
+    return logs_dir
 
 def manage_processes(managed_app_dir: Path, managed_app_port: int, designer_app_port: int):
-    logs_dir = Path(tempfile.mkdtemp(prefix="appdesigner_logs_"))
+    # Create temporary logs directory
+    logs_dir = get_logs_dir()
+    process_manager = ProcessManager()
     
-    managed_app = threading.Thread(
-        target=start_managed_app, 
-        args=(managed_app_dir, managed_app_port, logs_dir),
-        daemon=True
-    )
-    designer_app = threading.Thread(
-        target=start_designer_app, 
-        args=(designer_app_port, managed_app_dir, logs_dir),
-        daemon=True
-    )
-    
-    managed_app.start()
-    designer_app.start()
-        
     try:
-        while True:
+        managed_app = threading.Thread(
+            target=start_managed_app, 
+            args=(process_manager, managed_app_dir, managed_app_port, logs_dir),
+            daemon=True
+        )
+        designer_app = threading.Thread(
+            target=start_designer_app, 
+            args=(process_manager, designer_app_port, managed_app_dir, logs_dir),
+            daemon=True
+        )
+        
+        managed_app.start()
+        designer_app.start()
+        
+        while process_manager.running:
             if not designer_app.is_alive():
                 console.log("[bold red]Designer app has stopped unexpectedly[/bold red]")
-                sys.exit(1)
+                process_manager.handle_shutdown(None, None)
             time.sleep(1)
     except KeyboardInterrupt:
-        console.log("[bold yellow]Terminating applications...[/bold yellow]")
+        process_manager.handle_shutdown(None, None)
+    finally:
+        # Clean up temporary logs directory
         shutil.rmtree(logs_dir, ignore_errors=True)
-        sys.exit(0)
 
 @app.command()
 def run(managed_app_dir: Path, managed_app_port: int = 8000, designer_app_port: int = 8001):

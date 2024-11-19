@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
@@ -20,12 +19,15 @@ async def get_logs() -> Dict[str, str]:
     
     logs = []
     
-    if stdout_file.exists():
-        with open(stdout_file) as f:
-            logs.extend(f.readlines())
+    for log_file in [stdout_file, stderr_file]:
+        if log_file.exists():
+            try:
+                with open(log_file) as f:
+                    content = f.read()
+                    if content:
+                        logs.append(f"=== {log_file.name} ===")
+                        logs.append(content)
+            except Exception as e:
+                logs.append(f"Error reading {log_file.name}: {str(e)}")
     
-    if stderr_file.exists():
-        with open(stderr_file) as f:
-            logs.extend(f.readlines())
-            
-    return {"logs": "".join(logs)}
+    return {"logs": "\n".join(logs) if logs else "No logs available"}
