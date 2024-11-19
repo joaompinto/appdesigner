@@ -106,24 +106,26 @@ def get_logs_dir() -> Path:
     logs_dir = Path(tempfile.mkdtemp(prefix="appdesigner_logs_"))
     return logs_dir
 
-def manage_processes(managed_app_dir: Path, managed_app_port: int, designer_app_port: int):
+def manage_processes(managed_app_dir: Path, managed_app_port: int, designer_app_port: int, start_managed_app: bool = False):
     # Create temporary logs directory
     logs_dir = get_logs_dir()
     process_manager = ProcessManager()
     
     try:
-        managed_app = threading.Thread(
-            target=start_managed_app, 
-            args=(process_manager, managed_app_dir, managed_app_port, logs_dir),
-            daemon=True
-        )
         designer_app = threading.Thread(
             target=start_designer_app, 
             args=(process_manager, designer_app_port, managed_app_dir, logs_dir),
             daemon=True
         )
         
-        managed_app.start()
+        if start_managed_app:
+            managed_app = threading.Thread(
+                target=start_managed_app, 
+                args=(process_manager, managed_app_dir, managed_app_port, logs_dir),
+                daemon=True
+            )
+            managed_app.start()
+        
         designer_app.start()
         
         while process_manager.running:
@@ -138,7 +140,12 @@ def manage_processes(managed_app_dir: Path, managed_app_port: int, designer_app_
         shutil.rmtree(logs_dir, ignore_errors=True)
 
 @app.command()
-def run(managed_app_dir: Path, managed_app_port: int = 8000, designer_app_port: int = 8001):
+def run(
+    managed_app_dir: Path,
+    managed_app_port: int = 8000,
+    designer_app_port: int = 8001,
+    start_managed_app: bool = False
+):
     if not managed_app_dir.exists():
         console.log(f"[bold red]Managed app directory {managed_app_dir} does not exist[/bold red]")
         if Confirm.ask("[bold yellow]Managed app directory does not exist. Do you want to create it from the starter template?[/bold yellow]"):
@@ -148,7 +155,7 @@ def run(managed_app_dir: Path, managed_app_port: int = 8000, designer_app_port: 
         else:
             sys.exit(1)
 
-    manage_processes(managed_app_dir, managed_app_port, designer_app_port)
+    manage_processes(managed_app_dir, managed_app_port, designer_app_port, start_managed_app)
 
 if __name__ == "__main__":
     app()

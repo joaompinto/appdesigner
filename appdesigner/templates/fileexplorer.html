@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/modal.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/fileexplorer.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="file-explorer-column">
+            <div class="explorer-section context-section">
+                <div class="context-tree-header">
+                    <h2>Context Explorer</h2>
+                    <button id="add-folder-button" class="icon-button" title="Add Folder">+</button>
+                </div>
+                <div class="context-tree" id="context-tree"></div>
+            </div>
+            <div class="explorer-section file-section">
+                <div class="file-tree-header">
+                    <h2 id="active-context">No Context Selected</h2>
+                    <div id="current-path" class="breadcrumb-path"></div>
+                </div>
+                <div class="file-tree" id="file-tree"></div>
+            </div>
+        </div>
+        <div class="file-content-column">
+            <div class="file-content-header">
+                <h2 class="filename-container">
+                    <span id="current-file">No file selected</span>
+                </h2>
+            </div>
+            <div class="content-toolbar">
+                <span id="editor-mode" class="mode-indicator readonly">Read Only</span>
+                <div class="toolbar-center">
+                    <button id="edit-button" class="edit-button" style="display: none">Edit</button>
+                    <button id="save-button" class="save-button">Save</button>
+                    <button id="preview-button" class="preview-button" style="display: none">Preview</button>
+                </div>
+            </div>
+            <div class="file-content-editor" id="file-content">
+                <div class="editor-placeholder">Select a file to view its contents</div>
+            </div>
+        </div>
+        <div class="preview-column" id="preview-column" style="display: none">
+            <div class="preview-header">
+                <h2>Preview</h2>
+            </div>
+            <div class="markdown-preview" id="preview-content"></div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="module" src="{{ url_for('static', path='fileexplorer/editor.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='fileexplorer/filetree.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='fileexplorer/context.js') }}"></script>
+</body>
+</html>

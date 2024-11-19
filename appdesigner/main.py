@@ -1,24 +1,30 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from api.agent import router as agent_router
 from api.logs import router as logs_router
+from api.filemanager import router as filemanager_router
 from pathlib import Path
 
 app = FastAPI()
 
-# Ensure static directory exists
-static_dir = Path(__file__).parent / "static"
-static_dir.mkdir(exist_ok=True)
-
-# Mount the static directory
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# Set up static and template directories
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 @app.get("/")
-async def read_index():
-    return FileResponse('static/index.html')
+async def home(request: Request):
+    return templates.TemplateResponse(
+        "fileexplorer.html",
+        {"request": request, "title": "App Designer - File Explorer"}
+    )
+
+@app.get("/preview")
+async def read_preview():
+    return FileResponse('static/preview.html')
 
 @app.get("/health")
 async def health_check():
@@ -31,3 +37,4 @@ async def favicon():
 # Include the routers
 app.include_router(agent_router)
 app.include_router(logs_router, prefix="/api")
+app.include_router(filemanager_router, prefix="/api")
