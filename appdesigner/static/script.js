@@ -1,6 +1,6 @@
 import { agentAPI } from './agents.js';
 
-function refreshMainFrame() {
+export function refreshMainFrame() {
     const iframe = document.getElementById('main-iframe');
     if (iframe) {
         // Show refresh message with timestamp
@@ -21,7 +21,15 @@ function refreshMainFrame() {
     }
 }
 
-function handleKeyPress(event) {
+function updateIframePort(port) {
+    const iframe = document.getElementById('main-iframe');
+    if (iframe) {
+        iframe.src = `http://localhost:${port}`;
+        iframe.dataset.port = port;
+    }
+}
+
+export function handleKeyPress(event) {
     if (event.key === 'Enter') {
         const $input = $('#terminal-input');
         const command = $input.val();
@@ -39,15 +47,7 @@ function handleKeyPress(event) {
             .then(response => {
                 const $wrapper = $('<div>').addClass('response-line-wrapper');
                 
-                // Add info icon first
-                $wrapper.append(
-                    $('<div>')
-                        .addClass('info-icon')
-                        .html('<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>')
-                        .attr('title', 'View full response')
-                        .on('click', () => showRawOutput(response.rawOutput))
-                );
-                
+                   
                 // Add response text
                 $wrapper.append(
                     $('<div>')
@@ -90,14 +90,23 @@ function showRawOutput(rawOutput) {
 }
 
 $(document).ready(() => {
+    // Get port from URL params or use default
+    const urlParams = new URLSearchParams(window.location.search);
+    const port = urlParams.get('managed_port') || '8000';
+    updateIframePort(port);
+    
+    // Add event listener for terminal input
+    document.getElementById('terminal-input').addEventListener('keypress', handleKeyPress);
+    
     // Update logs automatically
-    function updateLogs() {
-        $.get('/process-output', function(data) {
+    async function updateLogs() {
+        try {
+            const data = await agentAPI.getLogs();
             const $logs = $('#server-logs');
             $logs.empty(); // Clear existing logs
             
             // Add the new logs
-            const lines = data.split('\n');
+            const lines = data.logs.split('\n');
             lines.forEach(line => {
                 if (line.trim()) {  // Only add non-empty lines
                     // Check for directory update marker
@@ -119,12 +128,17 @@ $(document).ready(() => {
             if (isNearBottom) {
                 $logs.scrollTop($logs[0].scrollHeight);
             }
-        });
+        } catch (error) {
+            console.error('Failed to update logs:', error);
+        }
     }
 
     // Start automatic log updates
     updateLogs();
-    setInterval(updateLogs, 500);  // Update every 500ms instead of 1000ms
+    setInterval(updateLogs, 500);
+
+    // Add event listeners
+    $('#terminal-input').on('keypress', handleKeyPress);
 
     // Remove old button handler
     $('.nav-button').remove();

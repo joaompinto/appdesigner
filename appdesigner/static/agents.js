@@ -36,6 +36,19 @@ class AgentAPI {
             throw error;
         }
     }
+
+    async getLogs() {
+        try {
+            const response = await fetch(`${this.baseUrl}/api/logs`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            throw error;
+        }
+    }
 }
 
 // Create global instance

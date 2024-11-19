@@ -13,7 +13,7 @@ body {
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 70% 30%;
     height: 100%;
     position: relative;
     /* Remove user-select: none */
@@ -42,7 +42,7 @@ body {
     color: #00ff00;
     box-sizing: border-box;
     font-family: 'Courier New', monospace;
-    height: 100%;
+    height: 100vh;  /* Change to viewport height */
     display: flex;
     flex-direction: column;
     position: relative;
@@ -90,16 +90,18 @@ body {
 }
 
 .logs-section {
-    flex: 1;  /* Keep smaller ratio for logs */
+    flex: 1;  /* Take remaining space */
     display: flex;
     flex-direction: column;
-    min-height: 150px;  /* Add minimum height */
+    margin-top: 0;
+    overflow: hidden;
 }
 
 #server-logs {
-    padding-bottom: 10px;
+    flex: 1;  /* Take all available space */
     overflow-y: auto;
     font-size: 0.9em;
+    padding: 10px;
 }
 
 #server-logs .terminal-line {
@@ -111,12 +113,13 @@ body {
 }
 
 .instructions-section {
-    flex: 3;  /* Increased flex ratio since history section is removed */
+    flex: 0 0 50%;  /* Fixed height ratio */
     display: flex;
     flex-direction: column;
-    min-height: 0;
     position: relative;
     border-bottom: 2px solid #1e272e;
+    margin-bottom: 0;
+    overflow: hidden;
 }
 
 /* Removed .resize-handle styles */
@@ -322,4 +325,49 @@ p {
     display: flex;
     align-items: flex-start;
     padding-left: 15px;  /* Move padding from terminal-line */
+}
+
+.terminal {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #1a1f24;
+    position: relative;
+    padding: 10px;
+    margin: 0; /* Ensure no margins */
+}
+
+.terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 40px; /* Space for input box */
+    padding: 5px;
+}
+
+.terminal-input-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background: #1a1f24;
+}
+
+.terminal-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #fff;
+    font-family: monospace;
+    padding: 5px 10px;
+    border-radius: 3px;
+    outline: none;
+}
+
+/* Remove duplicate terminal-line styles */
+.terminal-line {
+    margin: 2px 0;
+    word-wrap: break-word;
+    color: #e0e0e0;
+    white-space: pre-wrap;
 }

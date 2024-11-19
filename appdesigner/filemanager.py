@@ -36,7 +36,14 @@ class FileManager:
                             print(f"Could not read file {filepath}: {e}")
         return managed_files
 
-    def apply_file_changes(self, changes: Dict[str, str]) -> Dict[str, str]:
+    def get_relative_path(self, absolute_path: str) -> str:
+        """Convert absolute path to relative path from managed directory."""
+        try:
+            return str(Path(absolute_path).relative_to(self.managed_dir))
+        except ValueError:
+            return absolute_path
+
+    def apply_file_changes(self, changes: Dict[str, str]) -> Dict[str, Dict[str, str]]:
         """Apply changes to files in managed directory."""
         results = {}
         for filepath, content in changes.items():
@@ -44,9 +51,17 @@ class FileManager:
                 full_path = self.managed_dir / filepath
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 full_path.write_text(content, encoding='utf-8')
-                results[filepath] = "success"
+                abs_path = str(full_path.absolute())
+                results[abs_path] = {
+                    "status": "success",
+                    "relative_path": self.get_relative_path(abs_path)
+                }
             except Exception as e:
-                results[filepath] = f"error: {str(e)}"
+                abs_path = str(full_path.absolute())
+                results[abs_path] = {
+                    "status": f"error: {str(e)}",
+                    "relative_path": self.get_relative_path(abs_path)
+                }
         return results
 
     def read_file(self, filename: str) -> str:

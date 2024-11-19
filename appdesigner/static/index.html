@@ -6,12 +6,12 @@
     <title>FastAPI Static Content</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/static/script.js"></script>
+    <script type="module" src="/static/script.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="main-column">
-            <iframe id="main-iframe" src="http://localhost:9000" frameborder="0"></iframe>
+            <iframe id="main-iframe" src="http://localhost:8000" data-port="8000" frameborder="0"></iframe>
         </div>
         <div class="side-column">
             <h1>App Designer</h1>
@@ -24,11 +24,13 @@
                     </button>
                     Instructions
                 </h2>
-                <div class="terminal-output" id="terminal-output">
-                    <input type="text" class="terminal-input" id="terminal-input" 
-                           placeholder="Type your request..." 
-                           onkeypress="handleKeyPress(event)"
-                           autofocus>
+                <div class="terminal">
+                    <div class="terminal-output" id="terminal-output"></div>
+                    <div class="terminal-input-container">
+                        <input type="text" class="terminal-input" id="terminal-input" 
+                               placeholder="Type your request..." 
+                               autofocus>
+                    </div>
                 </div>
             </div>
             <div class="logs-section">
