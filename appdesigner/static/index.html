@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FastAPI Static Content</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/modal.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="module" src="/static/script.js"></script>
 </head>
@@ -15,6 +17,18 @@
         </div>
         <div class="side-column">
             <h1>App Designer</h1>
+            <div class="resize-arrows">
+                <button class="resize-arrow left" title="Increase width">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button class="resize-arrow right" title="Reduce width">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
             <div class="instructions-section">
                 <h2>
                     <button class="refresh-button" title="Refresh preview" onclick="refreshMainFrame()">
@@ -34,18 +48,28 @@
                 </div>
             </div>
             <div class="logs-section collapsed">
-                <h2>Server Logs</h2>
-                <div class="logs-container" id="server-logs">
-                    <!-- Logs will be inserted here -->
+                <div class="logs-header">
+                    <h2>
+                        <svg class="expand-arrow" viewBox="0 0 24 24" width="24" height="24">
+                            <path d="M7 10l5 5 5-5z" fill="currentColor"/>
+                        </svg>
+                        <span class="logs-label">Server Logs</span>
+                        <button class="log-type-button active">Server</button>
+                        <button class="log-type-button">Content</button>
+                    </h2>
+                    <div class="logs-tabs">
+                        <button class="log-tab active" data-type="stdout">stdout</button>
+                        <button class="log-tab" data-type="stderr">stderr</button>
+                    </div>
                 </div>
+                <div class="logs-container" id="stdout-logs"></div>
+                <div class="logs-container" id="stderr-logs"></div>
+                <div class="logs-container" id="files-logs"></div>
+                <div class="logs-container" id="sent-logs"></div>
             </div>
         </div>
     </div>
-    <div id="rawOutputModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <pre id="rawModalContent"></pre>
-        </div>
-    </div>
+    <div id="modal-container"></div>
+    <div class="refresh-popup">↻ Preview refreshed</div>
 </body>
 </html>

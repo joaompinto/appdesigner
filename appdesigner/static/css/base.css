@@ -1,0 +1,117 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+:root {
+    --designer-width: 30%;
+    --min-designer-width: 200px;
+    --max-designer-width: 60%;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: calc(100% - var(--designer-width)) var(--designer-width);
+    height: 100%;
+    position: relative;
+    transition: grid-template-columns 0.3s ease;
+}
+
+.main-column {
+    min-width: 200px;
+    padding: 0;
+    box-sizing: border-box;
+    height: 100%;
+    overflow: hidden;
+}
+
+#main-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+    overflow-y: overlay;
+}
+
+.side-column {
+    min-width: 200px;
+    padding: 0;
+    background-color: #2f3640;
+    color: #00ff00;
+    box-sizing: border-box;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+p {
+    color: #666;
+    line-height: 1.6;
+}
+
+.resize-arrows {
+    position: absolute;
+    left: 10px;  /* Changed from 0 */
+    top: 12px;   /* Changed from 50% */
+    transform: none;  /* Remove translateY */
+    display: flex;
+    flex-direction: row;  /* Changed from column */
+    gap: 4px;
+    z-index: 100;
+}
+
+.resize-arrow {
+    background: rgba(255, 255, 255, 0.1);  /* Lighter background */
+    border: none;
+    color: #4a9eff;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.resize-arrow:hover {
+    opacity: 1;
+    background: #242a30;
+}
+
+.resize-arrow svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Hide arrows when at limits */
+.container[data-at-min] .resize-arrow.right,
+.container[data-at-max] .resize-arrow.left {
+    opacity: 0.2;
+    cursor: not-allowed;
+}
+
+/* Move h1 to accommodate arrows */
+.side-column h1 {
+    margin: 0;
+    padding: 8px;  /* Reduced from 10px */
+    padding-left: 80px;  /* Add space for arrows */
+    color: #fff;
+    flex: 0 0 auto;
+    font-size: 1.2em;  /* Added to make the text smaller */
+}
