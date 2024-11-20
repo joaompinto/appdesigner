@@ -46,6 +46,29 @@ def get_relative_path(file_path: Path, base_dir: Path) -> str:
     except ValueError:
         return str(file_path)
 
+def scan_directory(base_dir: Path) -> List[Dict[str, Any]]:
+    """Recursively scan directory and return all files and directories."""
+    results = []
+    for entry in base_dir.glob('**/*'):
+        if entry.name.startswith('.'):
+            continue
+        
+        rel_path = get_relative_path(entry, base_dir)
+        if entry.is_file() and is_text_file(str(entry)):
+            results.append({
+                "path": rel_path,
+                "name": entry.name,
+                "type": "file"
+            })
+        elif entry.is_dir():
+            results.append({
+                "path": rel_path,
+                "name": entry.name,
+                "type": "directory"
+            })
+    
+    return sorted(results, key=lambda x: (x['type'] != 'directory', x['path']))
+
 @router.get("/files")
 async def get_files() -> List[Dict[str, str]]:
     """Get list of all files in the managed directory."""
@@ -57,19 +80,7 @@ async def get_files() -> List[Dict[str, str]]:
     if not base_dir.exists():
         raise HTTPException(status_code=404, detail="Managed directory not found")
 
-    files = []
-    for path in base_dir.rglob('*'):
-        if path.name.startswith('.'):
-            continue
-            
-        rel_path = get_relative_path(path, base_dir)
-        files.append({
-            "path": rel_path,
-            "name": path.name,
-            "type": "directory" if path.is_dir() else "file"
-        })
-
-    return files
+    return scan_directory(base_dir)
 
 @router.get("/file")
 async def get_file(path: str) -> Dict[str, str]:

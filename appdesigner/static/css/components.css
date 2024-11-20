@@ -1,4 +1,3 @@
-
 .side-column h1 {
     margin: 0;
     padding: 10px;
@@ -29,6 +28,28 @@
     background-color: #1a1f24;
     border-top: 1px solid #2f3640;
     transition: all 0.3s ease;
+}
+
+.expand-arrow {
+    transition: transform 0.3s ease;
+    margin-right: 8px;
+    cursor: pointer;
+    width: 24px;  /* Increased from default size */
+    height: 24px; /* Increased from default size */
+    opacity: 0.8; /* Make it more visible */
+}
+
+.expand-arrow:hover {
+    opacity: 1;
+    transform: scale(1.1); /* Add subtle hover effect */
+}
+
+.logs-section.collapsed .expand-arrow {
+    transform: rotate(180deg);
+}
+
+.logs-section:not(.collapsed) .expand-arrow {
+    transform: rotate(0deg);
 }
 
 /* ...existing logs styles... */

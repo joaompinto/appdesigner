@@ -54,14 +54,20 @@ function updateEditorMode(readonly = true) {
     if (!window.editor) return;  // Updated reference
     
     // Update editor state
-    window.editor.setOption('readOnly', readonly);  // Updated reference
-    window.editor.getWrapperElement().classList.toggle('readonly', readonly);  // Updated reference
-    window.isEditMode = !readonly;  // Update global variable
+    window.editor.setOption('readOnly', readonly);
+    window.editor.getWrapperElement().classList.toggle('readonly', readonly);
+    window.isEditMode = !readonly;
     
-    // Update mode indicator
+    // Update mode indicator - only show if there's a file selected
     const modeIndicator = document.getElementById('editor-mode');
-    modeIndicator.className = `mode-indicator ${readonly ? 'readonly' : 'editing'}`;
-    modeIndicator.textContent = readonly ? 'Read Only' : 'Editing';
+    const currentFile = document.getElementById('current-file').textContent;
+    const hasFileSelected = currentFile && currentFile !== 'No file selected';
+    
+    modeIndicator.style.display = hasFileSelected ? 'inline-block' : 'none';
+    if (hasFileSelected) {
+        modeIndicator.className = `mode-indicator ${readonly ? 'readonly' : 'editing'}`;
+        modeIndicator.textContent = readonly ? 'Read Only' : 'Editing';
+    }
     
     // Update button visibility
     const editButton = document.getElementById('edit-button');

@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/modal.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/fileexplorer.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/projectexplorer.css') }}">
 </head>
 <body>
     <div class="container">
@@ -17,13 +18,13 @@
             <div class="explorer-section context-section">
                 <div class="context-tree-header">
                     <h2>Context Explorer</h2>
-                    <button id="add-folder-button" class="icon-button" title="Add Folder">+</button>
+                    <button id="create-tag-button" class="icon-button" title="Create Tag">+</button>
                 </div>
                 <div class="context-tree" id="context-tree"></div>
             </div>
             <div class="explorer-section file-section">
                 <div class="file-tree-header">
-                    <h2 id="active-context">No Context Selected</h2>
+                    <h2>File Explorer</h2>
                     <div id="current-path" class="breadcrumb-path"></div>
                 </div>
                 <div class="file-tree" id="file-tree"></div>
@@ -33,10 +34,10 @@
             <div class="file-content-header">
                 <h2 class="filename-container">
                     <span id="current-file">No file selected</span>
+                    <span id="editor-mode" class="mode-indicator readonly">Read Only</span>
                 </h2>
             </div>
-            <div class="content-toolbar">
-                <span id="editor-mode" class="mode-indicator readonly">Read Only</span>
+            <div class="content-toolbar toolbar-hidden">
                 <div class="toolbar-center">
                     <button id="edit-button" class="edit-button" style="display: none">Edit</button>
                     <button id="save-button" class="save-button">Save</button>
@@ -44,8 +45,11 @@
                 </div>
             </div>
             <div class="file-content-editor" id="file-content">
-                <div class="editor-placeholder">Select a file to view its contents</div>
+                <div class="editor-placeholder">Select a file or Context tag to view the content</div>
             </div>
+        </div>
+        <div class="context-view-column" id="context-view" style="display: none">
+            <!-- Context view content will be inserted here -->
         </div>
         <div class="preview-column" id="preview-column" style="display: none">
             <div class="preview-header">
@@ -55,15 +59,48 @@
         </div>
     </div>
     <div id="toast-container"></div>
+    
+    <!-- Add context menu -->
+    <div id="context-menu" class="context-menu">
+        <div class="menu-item" id="rename-folder">Rename</div>
+    </div>
+
+    <!-- Add rename modal -->
+    <div id="rename-folder-modal" class="modal">
+        <div class="modal-content">
+            <h3>Rename Context Folder</h3>
+            <input type="text" id="rename-folder-input" placeholder="Enter new name" class="modal-input">
+            <div class="modal-actions">
+                <button id="rename-cancel" class="modal-button cancel">Cancel</button>
+                <button id="rename-save" class="modal-button create">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing modals -->
+    <div id="new-folder-modal" class="modal">
+        <div class="modal-content">
+            <h3>New Context Tag</h3>
+            <input type="text" id="new-folder-name" placeholder="Enter tag name" class="modal-input">
+            <div class="modal-actions">
+                <button id="modal-cancel" class="modal-button cancel">Cancel</button>
+                <button id="modal-create" class="modal-button create">Create</button>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/toml/toml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/mode/simple.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script type="module" src="{{ url_for('static', path='fileexplorer/editor.js') }}"></script>
-    <script type="module" src="{{ url_for('static', path='fileexplorer/filetree.js') }}"></script>
-    <script type="module" src="{{ url_for('static', path='fileexplorer/context.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='projectexplorer/editor.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='projectexplorer/filetree.js') }}"></script>
+    <script type="module" src="{{ url_for('static', path='projectexplorer/context.js') }}"></script>
 </body>
 </html>

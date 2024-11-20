@@ -1,9 +1,9 @@
 import { getLanguageFromPath, createEditor, updateEditorMode, showToast } from './editor.js';
-// Update marked import to use CDN version loaded in HTML
 const { marked } = window;
-import { contextItems, currentContext } from './context.js';
+import { contextItems, addToContext, setupDragAndDrop } from './context.js';
 
 let currentPath = '';
+let selectedFile = null;
 
 function updateBreadcrumbs(path) {
     const container = document.getElementById('current-path');
@@ -104,7 +104,7 @@ async function loadFileTree() {
         // Sort files by type (directories first) and name
         files.sort((a, b) => {
             if (a.type === b.type) {
-                return a.path.localeCompare(b.path);
+                return a.name.localeCompare(b.name);  // Compare by name instead of path
             }
             return a.type === 'directory' ? -1 : 1;
         });
@@ -122,7 +122,7 @@ async function loadFileTree() {
             
             const name = document.createElement('span');
             name.className = 'name';
-            name.textContent = file.name;
+            name.textContent = file.name;  // Use file.name instead of file.path
             
             item.appendChild(icon);
             item.appendChild(name);
@@ -146,6 +146,32 @@ function resetFileExplorer() {
     loadFileTree();
 }
 
+function clearFileSelection() {
+    selectedFile = null;
+    document.querySelectorAll('.file-tree-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    document.getElementById('current-file').textContent = 'No file selected';
+    document.getElementById('file-content').innerHTML = '<div class="editor-placeholder">Select a file to view its contents</div>';
+    
+    // Hide editor controls and toolbar
+    document.getElementById('edit-button').style.display = 'none';
+    document.getElementById('save-button').style.display = 'none';
+    document.getElementById('preview-button').style.display = 'none';
+    document.querySelector('.content-toolbar').classList.add('toolbar-hidden');
+    
+    // Reset editor state if exists
+    if (window.editor) {
+        window.editor.getWrapperElement().remove();
+        window.editor = null;
+    }
+    
+    // Hide CodeMirror editor if it exists
+    if (window.editor) {
+        window.editor.getWrapperElement().style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const editButton = document.getElementById('edit-button');
     const saveButton = document.getElementById('save-button');
@@ -156,13 +182,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileItem = e.target.closest('.file-tree-item');
         if (!fileItem) return;
 
+        // Clear any active context
+        document.querySelectorAll('.context-folder').forEach(folder => {
+            folder.classList.remove('active');
+        });
+        window.currentContext = null;  // Use window.currentContext
+
+        selectedFile = fileItem.dataset.path;
+
         // Reset editor state only for files
         const isFile = fileItem.classList.contains('file');
         if (isFile) {
             window.isEditMode = false;
             window.hasUnsavedChanges = false;
             
-            // Update header and content only for files
+            // Show toolbar and update header
+            document.querySelector('.content-toolbar').classList.remove('toolbar-hidden');
             const filename = fileItem.dataset.path;
             document.getElementById('current-file').textContent = filename;
             editButton.style.display = 'block';
@@ -196,7 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewContent.innerHTML = marked.parse(window.editor.getValue());
             }
         } else {
-            // For directories, just update selection
+            // For directories, hide toolbar and buttons
+            document.querySelector('.content-toolbar').classList.add('toolbar-hidden');
             editButton.style.display = 'none';
             saveButton.style.display = 'none';
         }
@@ -224,6 +260,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial file tree load
     loadFileTree();
+
+    // Make all file tree items draggable
+    document.querySelectorAll('.file-tree-item').forEach(item => {
+        item.draggable = true;
+    });
+
+    // Initialize drag and drop
+    setupDragAndDrop();
 });
 
 export {
@@ -231,5 +275,6 @@ export {
     navigateToDirectory,
     loadFileTree,
     resetFileExplorer,
-    currentPath
+    currentPath,
+    clearFileSelection
 };
