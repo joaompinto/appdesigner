@@ -13,18 +13,20 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/projectexplorer.css') }}">
 </head>
 <body>
-    <div class="container">
+    <div class="container project-explorer">
         <div class="file-explorer-column">
             <div class="explorer-section context-section">
                 <div class="context-tree-header">
-                    <h2>Context Explorer</h2>
+                    <h2>Context Tags</h2>
                     <button id="create-tag-button" class="icon-button" title="Create Tag">+</button>
                 </div>
-                <div class="context-tree" id="context-tree"></div>
+                <div class="context-tree context-drop-zone" id="context-tree"></div>
             </div>
             <div class="explorer-section file-section">
                 <div class="file-tree-header">
                     <h2>File Explorer</h2>
+                </div>
+                <div class="breadcrumb-container">
                     <div id="current-path" class="breadcrumb-path"></div>
                 </div>
                 <div class="file-tree" id="file-tree"></div>
@@ -45,11 +47,26 @@
                 </div>
             </div>
             <div class="file-content-editor" id="file-content">
+                <div class="empty-state">
+                    <span class="empty-icon">📄</span>
+                    <p>Select a file or Context tag to view its content</p>
+                    <p class="empty-hint">You can click any file in the explorer to view or edit it</p>
+                </div>
                 <div class="editor-placeholder">Select a file or Context tag to view the content</div>
             </div>
         </div>
-        <div class="context-view-column" id="context-view" style="display: none">
-            <!-- Context view content will be inserted here -->
+        <div class="active-context-view" id="context-view">
+            <div class="context-content-wrapper">
+                <div class="context-view-header">
+                    <div class="context-count" id="context-count">0 files</div>
+                </div>
+                <div class="empty-state" id="context-empty-state" style="display: none">
+                    <span class="empty-icon">📁</span>
+                    <p>No files in this context</p>
+                    <p class="empty-hint">Drag and drop files from the file tree (bottom) or select another context tag</p>
+                </div>
+                <div class="context-items" id="context-items"></div>
+            </div>
         </div>
         <div class="preview-column" id="preview-column" style="display: none">
             <div class="preview-header">

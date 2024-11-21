@@ -1,6 +1,6 @@
 import { getLanguageFromPath, createEditor, updateEditorMode, showToast } from './editor.js';
 const { marked } = window;
-import { contextItems, addToContext, setupDragAndDrop } from './context.js';
+import { contextItems } from './context.js';  // Remove addToContext since it's not used
 
 let currentPath = '';
 let selectedFile = null;
@@ -62,6 +62,8 @@ function navigateToDirectory(path) {
     loadFileTree();
 }
 
+// Remove setupFileTreeDragAndDrop function entirely
+
 async function loadFileTree() {
     const treeElement = document.getElementById('file-tree');
     if (!treeElement) return;  // Add null check
@@ -71,7 +73,8 @@ async function loadFileTree() {
         // Add loading state class
         treeElement.classList.add('loading');
         
-        const response = await fetch('/api/files');
+        // Add path parameter to API call
+        const response = await fetch(`/api/files${currentPath ? `?path=${encodeURIComponent(currentPath)}` : ''}`);
         const allFiles = await response.json();
         treeElement.innerHTML = ''; // Clear existing content
 
@@ -94,12 +97,8 @@ async function loadFileTree() {
             treeElement.appendChild(backItem);
         }
         
-        // Filter files based on current path
-        const files = allFiles.filter(file => {
-            if (!currentPath) return !file.path.includes('/');
-            return file.path.startsWith(currentPath + '/') && 
-                   !file.path.slice(currentPath.length + 1).includes('/');
-        });
+        // Update filtering logic to show direct children only
+        const files = currentPath ? allFiles : allFiles.filter(file => !file.path.includes('/'));
 
         // Sort files by type (directories first) and name
         files.sort((a, b) => {
@@ -113,8 +112,11 @@ async function loadFileTree() {
         files.forEach(file => {
             const item = document.createElement('div');
             item.className = `file-tree-item ${file.type}`;
+            // Make both files and directories draggable
+            item.classList.add('draggable');
+            item.draggable = true;
             item.dataset.path = file.path;
-            item.draggable = true; // Make items draggable
+            item.dataset.type = file.type;  // Add type to dataset
             
             const icon = document.createElement('span');
             icon.className = 'icon';
@@ -129,6 +131,10 @@ async function loadFileTree() {
             treeElement.appendChild(item);
         });
 
+        // Add drag event listeners
+        treeElement.addEventListener('dragstart', handleDragStart);
+        treeElement.addEventListener('dragend', handleDragEnd);
+
     } catch (error) {
         console.error('Failed to load file tree:', error);
         const errorMessage = error.response?.data?.detail || error.message;
@@ -140,6 +146,22 @@ async function loadFileTree() {
     }
 }
 
+function handleDragStart(e) {
+    const item = e.target.closest('.draggable');
+    if (!item) return;
+    
+    item.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', item.dataset.path);
+    e.dataTransfer.effectAllowed = 'copy';
+}
+
+function handleDragEnd(e) {
+    const item = e.target.closest('.draggable');
+    if (item) {
+        item.classList.remove('dragging');
+    }
+}
+
 function resetFileExplorer() {
     currentPath = '';
     updateBreadcrumbs('');
@@ -148,9 +170,6 @@ function resetFileExplorer() {
 
 function clearFileSelection() {
     selectedFile = null;
-    document.querySelectorAll('.file-tree-item').forEach(item => {
-        item.classList.remove('selected');
-    });
     document.getElementById('current-file').textContent = 'No file selected';
     document.getElementById('file-content').innerHTML = '<div class="editor-placeholder">Select a file to view its contents</div>';
     
@@ -164,11 +183,6 @@ function clearFileSelection() {
     if (window.editor) {
         window.editor.getWrapperElement().remove();
         window.editor = null;
-    }
-    
-    // Hide CodeMirror editor if it exists
-    if (window.editor) {
-        window.editor.getWrapperElement().style.display = 'none';
     }
 }
 
@@ -189,6 +203,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.currentContext = null;  // Use window.currentContext
 
         selectedFile = fileItem.dataset.path;
+
+        // Update selection UI
+        document.querySelectorAll('.file-tree-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        fileItem.classList.add('selected');
 
         // Reset editor state only for files
         const isFile = fileItem.classList.contains('file');
@@ -211,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const language = getLanguageFromPath(filename);
                     createEditor(contentElement, data.content, language, true);
                     updateEditorMode(true);  // Ensure readonly mode
+                    
+                    // Update token count in header if needed
+                    const fileHeader = document.getElementById('current-file');
+                    if (data.tokens !== undefined) {
+                        fileHeader.textContent = `${filename} (${formatTokens(data.tokens)})`;
+                    }
                 }
             } catch (error) {
                 console.error('Error loading file:', error);
@@ -230,18 +256,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const previewContent = document.getElementById('preview-content');
                 previewContent.innerHTML = marked.parse(window.editor.getValue());
             }
+
+            // Show file content column and hide context view
+            document.querySelector('.file-content-column').style.display = 'flex';
+            document.getElementById('context-view').style.display = 'none';
         } else {
             // For directories, hide toolbar and buttons
             document.querySelector('.content-toolbar').classList.add('toolbar-hidden');
             editButton.style.display = 'none';
             saveButton.style.display = 'none';
         }
-
-        // Update selection for both files and directories
-        document.querySelectorAll('.file-tree-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-        fileItem.classList.add('selected');
     });
 
     // Add double click handler
@@ -260,15 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial file tree load
     loadFileTree();
-
-    // Make all file tree items draggable
-    document.querySelectorAll('.file-tree-item').forEach(item => {
-        item.draggable = true;
-    });
-
-    // Initialize drag and drop
-    setupDragAndDrop();
 });
+
+// Remove the old drag event setup from setupDragAndDrop
 
 export {
     updateBreadcrumbs,

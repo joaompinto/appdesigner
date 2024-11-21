@@ -1,25 +1,24 @@
 import { showToast } from './editor.js';
-import { loadFileTree, resetFileExplorer } from './filetree.js';
 import { clearFileSelection } from './filetree.js';
 
 // Initialize with predefined tags instead of ALL context
 let contextItems = {
-    'Requirements': {
+    'Static': {
         type: 'tag',
         color: 'blue',
         items: new Set()
     },
-    'Documentation': {
+    'Dynamic Routers': {
         type: 'tag',
         color: 'green',
         items: new Set()
     },
-    'Tests': {
+    'Documentation': {
         type: 'tag',
         color: 'purple',
         items: new Set()
     },
-    'Core': {
+    'Tests': {
         type: 'tag',
         color: 'red',
         items: new Set()
@@ -63,6 +62,12 @@ function createContextTag(name, color) {
     tag.className = `context-tag ${color}`;
     tag.dataset.name = name;
     
+    // Add drop zone attributes
+    tag.addEventListener('dragenter', handleDragEnter);
+    tag.addEventListener('dragover', handleDragOver);
+    tag.addEventListener('dragleave', handleDragLeave);
+    tag.addEventListener('drop', handleDrop);
+    
     const label = document.createElement('span');
     label.className = 'tag-label';
     label.textContent = name;
@@ -76,28 +81,70 @@ function createContextTag(name, color) {
     
     // Add click handler for selection
     tag.addEventListener('click', () => switchContext(name));
-    
-    // Add dragover and drop handlers for adding files to context
-    tag.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        tag.classList.add('drag-over');
-    });
-
-    tag.addEventListener('dragleave', () => {
-        tag.classList.remove('drag-over');
-    });
-
-    tag.addEventListener('drop', (e) => {
-        e.preventDefault();
-        tag.classList.remove('drag-over');
-        
-        const path = e.dataTransfer.getData('text/plain');
-        if (!path) return;
-        
-        addToContext(path, name);
-    });
 
     return tag;
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drop-hover');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drop-hover');
+}
+
+function isPathContainedInItems(path, items) {
+    // Check if path is directly in items
+    if (items.has(path)) return true;
+
+    // Check if path is a subdirectory of any directory in items
+    for (const existingPath of items) {
+        if (path.startsWith(existingPath + '/')) return true;
+        if (existingPath.startsWith(path + '/')) return true;
+    }
+    return false;
+}
+
+function showNearMouseToast(message, event) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-near-mouse';
+    toast.textContent = message;
+    
+    // Position near mouse
+    toast.style.left = `${event.pageX + 10}px`;
+    toast.style.top = `${event.pageY - 30}px`;
+    
+    document.body.appendChild(toast);
+    
+    // Remove after animation
+    toast.addEventListener('animationend', () => {
+        toast.remove();
+    });
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const tag = e.currentTarget;
+    tag.classList.remove('drop-hover');
+    
+    const filePath = e.dataTransfer.getData('text/plain');
+    const contextName = tag.dataset.name;
+    
+    if (filePath && contextName) {
+        // Check if path already exists in context
+        if (isPathContainedInItems(filePath, contextItems[contextName].items)) {
+            showNearMouseToast(`Already in ${contextName}`, e);
+            return;
+        }
+        
+        addToContext(filePath, contextName);
+    }
 }
 
 function switchContext(name) {
@@ -126,13 +173,8 @@ function switchContext(name) {
     // Update content header and display view
     const currentFileElement = document.getElementById('current-file');
     currentFileElement.textContent = name ? `Showing context ${name}` : 'No file selected';
-    displayContextView(name);
+    updateContextView(name);
     
-    // Ensure the context view is visible
-    const contextViewElement = document.getElementById('context-view');
-    if (contextViewElement) {
-        contextViewElement.style.display = 'block';
-    }
     
     // Hide editor placeholder if it exists
     const editorPlaceholder = document.querySelector('.editor-placeholder');
@@ -159,7 +201,18 @@ function switchContext(name) {
 window.removeFromContext = function(contextName, path) {
     if (contextItems[contextName] && contextItems[contextName].items) {
         contextItems[contextName].items.delete(path);
-        displayContextView(contextName); // Refresh the display
+        
+        // Update the counter in the tag
+        const tag = document.querySelector(`.context-tag[data-name="${contextName}"] .tag-count`);
+        if (tag) {
+            tag.textContent = contextItems[contextName].items.size;
+        }
+        
+        // Immediately refresh the view if this is the active context
+        if (window.currentContext === contextName) {
+            updateContextView(contextName);
+        }
+        
         showToast(`Removed ${path} from context ${contextName}`);
     }
 };
@@ -168,6 +221,7 @@ function addToContext(path, contextName) {
     if (!contextItems[contextName]) return;
     if (contextItems[contextName].items.has(path)) return; // Prevent duplicates
     
+    const itemType = document.querySelector(`.file-tree-item[data-path="${path}"]`)?.classList.contains('directory') ? 'directory' : 'file';
     contextItems[contextName].items.add(path);
     
     // Update the counter
@@ -176,106 +230,145 @@ function addToContext(path, contextName) {
         tag.textContent = contextItems[contextName].items.size;
     }
     
-    // Refresh context view if this is the active context
+    // Always refresh context view if this is the active context
     if (window.currentContext === contextName) {
-        displayContextView(contextName);
-        showToast(`Added ${path} to context ${contextName}`);
+        updateContextView(contextName);
+        showToast(`Added ${itemType} ${path} to ${contextName} context`);
     }
 }
 
-// Add the displayContextView function
-function displayContextView(name) {
+function initializeContextView() {
+    // Remove setupContextDragAndDrop call
+}
+
+// Rename the function definition
+async function updateContextView(name) {
     const viewContainer = document.getElementById('context-view');
-    if (!viewContainer) return;
-
-    // Make sure the context view is visible
-    viewContainer.style.display = 'block';
-    viewContainer.innerHTML = '';
-
-    const context = contextItems[name];
-    if (!context) {
-        viewContainer.innerHTML = '<div class="error">Context not found.</div>';
+    const itemsList = document.getElementById('context-items');
+    const emptyState = document.getElementById('context-empty-state');
+    const countElement = document.getElementById('context-count');
+    
+    if (!viewContainer || !itemsList || !countElement || !emptyState) {
+        console.error('Missing elements:', {
+            viewContainer: !!viewContainer,
+            itemsList: !!itemsList,
+            emptyState: !!emptyState,
+            countElement: !!countElement
+        });
         return;
     }
-
-    // Create view header with count
-    const viewHeader = document.createElement('div');
-    viewHeader.className = 'context-view-header';
-    viewHeader.innerHTML = `
-        <div class="context-title ${context.color}">${name}</div>
-        <div class="context-count">${context.items.size} file${context.items.size !== 1 ? 's' : ''}</div>
-    `;
-    viewContainer.appendChild(viewHeader);
-
-    // Create content wrapper
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'context-content-wrapper';
-
-    // Create items list
-    const itemsList = document.createElement('div');
-    itemsList.className = 'context-items';
-
-    if (context.items.size > 0) {
-        context.items.forEach(item => {
+    
+    // Clear existing items before doing anything else
+    itemsList.innerHTML = '';
+    
+    viewContainer.style.display = 'block';
+    
+    const context = contextItems[name];
+    if (!context) return;
+    
+    // Update the count and empty state visibility
+    const itemCount = context.items.size;
+    countElement.textContent = `${itemCount} file${itemCount !== 1 ? 's' : ''}`;
+    emptyState.style.display = itemCount === 0 ? 'block' : 'none';
+    
+    if (itemCount > 0) {
+        // First identify all directories in the context
+        const contextDirs = Array.from(context.items)
+            .filter(item => item.endsWith('/') || document.querySelector(`.file-tree-item[data-path="${item}"]`)?.classList.contains('directory'));
+        
+        // Scan all directories first
+        const dirContentsMap = new Map();
+        for (const dir of contextDirs) {
+            const contents = await scanDirectoryContents(dir);
+            dirContentsMap.set(dir, contents);
+        }
+        
+        // Process each item
+        for (const item of context.items) {
+            const isDirectory = contextDirs.includes(item);
+            
             const itemElement = document.createElement('div');
             itemElement.className = 'context-item';
+            
+            const itemContent = document.createElement('div');
+            itemContent.className = 'item-content';
+            
+            const itemIcon = document.createElement('span');
+            itemIcon.className = 'item-icon';
+            itemIcon.innerHTML = isDirectory ? '📁' : '📄';
             
             const itemPath = document.createElement('span');
             itemPath.className = 'item-path';
             itemPath.textContent = item;
             
+            const itemInfo = document.createElement('div');
+            itemInfo.className = 'item-info';
+            
+            // Fetch file info if not a directory
+            if (!isDirectory) {
+                try {
+                    const response = await fetch(`/api/file?path=${encodeURIComponent(item)}`);
+                    const fileInfo = await response.json();
+                    if (fileInfo && fileInfo.tokens !== undefined) {
+                        itemInfo.textContent = formatTokens(fileInfo.tokens);
+                        itemContent.appendChild(itemInfo);
+                    }
+                } catch (error) {
+                    console.error('Error fetching file info:', error);
+                }
+            }
+            
             const removeButton = document.createElement('button');
             removeButton.className = 'remove-button';
             removeButton.innerHTML = '✕';
             removeButton.title = 'Remove from context';
+            // Ensure we use window.currentContext
             removeButton.onclick = () => window.removeFromContext(name, item);
             
-            itemElement.appendChild(itemPath);
+            itemContent.appendChild(itemPath);
+            
+            // If it's a directory, add its contents as a sublist
+            if (isDirectory && dirContentsMap.has(item)) {
+                const contents = dirContentsMap.get(item);
+                if (contents.length > 0) {
+                    const subList = document.createElement('div');
+                    subList.className = 'context-sublist';
+                    
+                    contents.forEach(subItem => {
+                        const subItemElement = document.createElement('div');
+                        subItemElement.className = 'context-subitem';
+                        
+                        const subIcon = document.createElement('span');
+                        subIcon.className = 'item-icon';
+                        subIcon.innerHTML = subItem.type === 'directory' ? '📁' : '📄';
+                        
+                        const subPath = document.createElement('span');
+                        subPath.className = 'item-path';
+                        subPath.textContent = subItem.path;
+                        
+                        // Add token info for files instead of size
+                        if (subItem.type === 'file' && subItem.tokens !== undefined) {
+                            const subInfo = document.createElement('span');
+                            subInfo.className = 'item-info';
+                            subInfo.textContent = formatTokens(subItem.tokens);
+                            subItemElement.appendChild(subInfo);
+                        }
+                        
+                        subItemElement.appendChild(subIcon);
+                        subItemElement.appendChild(subPath);
+                        subList.appendChild(subItemElement);
+                    });
+                    
+                    itemContent.appendChild(subList);
+                }
+            }
+            
+            itemElement.appendChild(itemIcon);
+            itemElement.appendChild(itemContent);
             itemElement.appendChild(removeButton);
             itemsList.appendChild(itemElement);
-        });
-    } else {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.innerHTML = `
-            <span class="empty-icon">📁</span>
-            <p>No files in this context</p>
-            <p class="empty-hint">Drag files here to add them</p>
-        `;
-        itemsList.appendChild(emptyState);
+        }
     }
-
-    // Assemble the view
-    contentWrapper.appendChild(itemsList);
-    viewContainer.appendChild(contentWrapper);
-}
-
-// Add the setupDragAndDrop function
-function setupDragAndDrop() {
-    const fileTree = document.getElementById('file-tree');
-
-    fileTree.addEventListener('dragstart', (e) => {
-        const fileItem = e.target.closest('.file-tree-item');
-        if (fileItem && fileItem.classList.contains('file')) {
-            e.dataTransfer.setData('text/plain', fileItem.dataset.path);
-        }
-    });
-
-    fileTree.addEventListener('dragover', (e) => {
-        e.preventDefault();
-    });
-
-    fileTree.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const path = e.dataTransfer.getData('text/plain');
-        const targetItem = e.target.closest('.file-tree-item');
-        if (targetItem && targetItem.classList.contains('directory')) {
-            const newPath = `${targetItem.dataset.path}/${path.split('/').pop()}`;
-            // Implement file move logic here
-            showToast(`Moved ${path} to ${newPath}`, 'success');
-            // Update UI accordingly
-        }
-    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -335,9 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initialize drag and drop
-    setupDragAndDrop();
-
+    initializeContextView();
     // Setup context menu
     const contextMenu = document.getElementById('context-menu');
     const renameModal = document.getElementById('rename-folder-modal');
@@ -352,7 +443,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rename-folder').addEventListener('click', () => {
         const folderName = contextMenu.dataset.target;
         if (folderName) {
-            showRenameModal(folderName);
+            renameModal.classList.add('active'); // Direct call instead of undefined showRenameModal
+            renameInput.value = folderName;
         }
         contextMenu.style.display = 'none';
     });
@@ -385,25 +477,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renameModal.classList.remove('active');
         }
     });
-
-    document.getElementById('file-tree').addEventListener('click', async (e) => {
-        const fileItem = e.target.closest('.file-tree-item');
-        if (!fileItem) return;
-
-        // Show file content column and hide context view
-        document.querySelector('.file-content-column').style.display = 'flex';
-        document.getElementById('context-view').style.display = 'none';
-        
-        // ...rest of the existing click handler code...
-    });
 });
 
 export { 
     initializeContextExplorer,
     switchContext,
     addToContext,
-    contextItems,
-    setupDragAndDrop
+    contextItems
 };
 
 // Function to rename a context folder (if not already defined)
@@ -414,7 +494,41 @@ function renameContextFolder(oldName, newName) {
     }
     contextItems[newName] = { ...contextItems[oldName] };
     delete contextItems[oldName];
-    displayContextView(newName);
+    updateContextView(newName);
     showToast(`Renamed context "${oldName}" to "${newName}"`);
     return true;
+}
+
+// Add new helper function to scan directory contents
+async function scanDirectoryContents(path) {
+    try {
+        const response = await fetch(`/api/files?path=${encodeURIComponent(path)}`);
+        if (!response.ok) throw new Error('Failed to scan directory');
+        const files = await response.json();
+        return files;
+    } catch (error) {
+        return [];
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === undefined || bytes === null) return '';
+    const size = Number(bytes);  // Convert to number
+    if (isNaN(size)) return '';  // Handle invalid numbers
+    
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let unitIndex = 0;
+    let value = size;
+    
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+    
+    return `${value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function formatTokens(tokens) {
+    if (tokens === undefined || tokens === null) return '';
+    return `${tokens.toLocaleString()} tokens`;
 }

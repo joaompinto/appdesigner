@@ -19,8 +19,16 @@
     --tag-gray: #5c5c5c;
 }
 
-/* Container Layout */
+/* Override container layout for project explorer */
 .container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Container Layout */
+.container.project-explorer {
     display: grid;
     grid-template-columns: 300px 1fr;
     height: 100vh;
@@ -124,11 +132,6 @@
     color: var(--text-secondary);
 }
 
-.mode-indicator.readonly {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-}
-
 .mode-indicator.edit {
     background: var(--accent-color);
     color: var(--text-primary);
@@ -172,7 +175,7 @@
 }
 
 /* Context View Column */
-.context-view-column {
+.active-context-view {
     flex: 1;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-color);
@@ -180,28 +183,11 @@
 }
 
 /* Remove old context-view styles */
-.context-view {
-    display: none;
-}
-
-/* Context View Styles within Editor */
-.context-view {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none; /* Initially hidden */
-}
+/* .context-view { ... } */
 
 /* Adjust the editor to accommodate the context view */
 .file-content-editor .CodeMirror {
     flex: 1;
-}
-
-.file-content-editor .context-view {
-    /* Additional styling if necessary */
 }
 
 /* Preview Column */
@@ -251,10 +237,44 @@
 /* Breadcrumb Path */
 .breadcrumb-path {
     font-size: 0.8rem;
+    color: var (--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb-container {
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.breadcrumb-path {
+    font-size: 0.8rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.breadcrumb-item {
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.breadcrumb-item:hover {
+    color: var(--accent-color);
+}
+
+.breadcrumb-item.current {
+    color: var(--text-secondary);
+    cursor: default;
+}
+
+.breadcrumb-separator {
+    color: var(--text-secondary);
+    margin: 0 4px;
 }
 
 /* Buttons */
@@ -277,7 +297,7 @@
     height: 100% !important;
     font-family: 'Consolas', 'Monaco', monospace;
     background: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
+    color: var (--text-primary) !important;
 }
 
 /* File Tree Items */
@@ -300,131 +320,66 @@
     color: var(--text-primary);
 }
 
-/* Context Tree Items */
-.context-folder {
-    display: none;
-    color: var(--text-primary);
-    padding: 0;
-    margin: 2px 0;
-}
-
-.context-folder-header {
-    display: none;
-    padding: 4px 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 3px;
-}
-
-.context-folder-header .name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.context-folder-header .folder-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-}
-
-.context-subfolders {
-    display: none;
-    padding-left: 16px;
-    margin-top: 2px;
-}
-
+/* Remove unused classes */
+.context-folder,
+.context-folder-header,
+.context-folder-header .name,
+.context-folder-header .folder-controls,
+.context-subfolders,
 .context-folder.active > .context-folder-header {
-    background: var(--selected-color);
-    color: var (--text-primary);
+    /* Remove these unused classes */
 }
 
 /* Context Items in Summary */
 .context-item {
-    color: var(--text-primary);  /* Changed from #e0e0e0 to match the rest of the light theme */
-}
-
-/* Path and Names */
-.path, .name {
-    color: var(--text-primary);  /* Changed from #e0e0e0 to match the rest of the light theme */
-}
-
-/* Breadcrumb Items */
-.breadcrumb-item {
-    color: var(--text-primary);  /* Changed from #e0e0e0 to match the rest of the light theme */
-    cursor: pointer;
-}
-
-.breadcrumb-separator {
-    color: var(--text-secondary);  /* Slightly darker for better visibility */
-}
-
-.breadcrumb-item.current {
-    color: var(--text-primary);  /* Changed from #cccccc to be more visible on light background */
-}
-
-/* Context Summary Styles */
-.context-summary {
-    padding: 16px;
-    color: var(--text-primary);
-}
-
-.context-summary h2 {
-    color: var(--text-primary);
-    margin-bottom: 16px;
-}
-
-.context-stats {
-    margin-bottom: 16px;
-    padding: 12px;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-}
-
-.stat {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-
-.stat .label {
-    color: var(--text-secondary);
-}
-
-.stat .value {
-    color: var(--text-primary);
-}
-
-.context-item-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.context-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 0;
+    padding: 8px;
     color: var(--text-primary);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    background: var(--bg-tertiary);
+    gap: 16px;  /* Add gap between content and remove button */
+}
+
+.context-item:hover {
+    background: var(--hover-color);
 }
 
 .context-item .remove-button {
-    background: transparent;
+    background: rgba(255, 0, 0, 0.1);
     border: none;
     color: var(--text-error);
     cursor: pointer;
-    font-size: 0.8rem;
-    padding: 2px 4px;
+    font-size: 0.85rem;  /* Reduced from 1rem */
+    padding: 3px 6px;    /* Reduced from 4px 8px */
+    min-width: 24px;     /* Ensure consistent width */
+    height: 24px;        /* Ensure consistent height */
     border-radius: 3px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
 }
 
 .context-item .remove-button:hover {
-    text-decoration: underline;
+    background: rgba(255, 0, 0, 0.2);
+    opacity: 1;
+    transform: scale(1.1);
+    text-decoration: none;  /* Remove underline on hover */
+}
+
+.context-item .item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    margin-left: auto;
+    margin-right: 8px;
+    white-space: nowrap;  /* Keep info on one line */
 }
 
 .empty {
@@ -525,9 +480,9 @@
 }
 
 .context-tag {
-    width: auto;         /* Remove full width */
-    min-width: 140px;    /* Set minimum width */
-    max-width: 200px;    /* Set maximum width */
+    width: auto;
+    min-width: 140px;
+    max-width: 200px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -535,37 +490,17 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
-    margin-left: 4px;    /* Add small margin for the active state indicator */
+    transition: all 0.2s ease, background 0.2s ease;
+    margin-left: 4px;
 }
 
 .context-tag:hover {
-    filter: brightness(1.1);
     transform: translateX(4px);
 }
 
 .context-tag.active {
     transform: translateX(4px);
     box-shadow: -2px 0 0 var(--text-primary);
-}
-
-.context-tag.drag-over {
-    background: var(--hover-color);
-}
-
-.tag-label {
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
-.tag-count {
-    background: rgba(255, 255, 255, 0.2);
-    color: var(--text-primary);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    min-width: 24px;
-    text-align: center;
 }
 
 /* Tag Colors */
@@ -590,8 +525,27 @@
 }
 
 /* Context View Styles */
+.context-view-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.context-view-header .context-count {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+}
+
 .context-content-wrapper {
-    padding: 16px;
+    padding: 0;
     height: 100%;
     overflow-y: auto;
 }
@@ -615,9 +569,10 @@
 .context-title.gray { background: var(--tag-gray); }
 
 .context-items {
-    margin-top: 16px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 16px;
+    padding: 16px;
+    margin: 0;
+    border: none;
+    min-height: 100px; /* Ensure there's always a drop target */
 }
 
 .context-item {
@@ -640,6 +595,12 @@
     font-size: 0.9rem;
 }
 
+.item-icon {
+    margin-right: 8px;
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
 .empty-state {
     text-align: center;
     color: var(--text-muted);
@@ -658,19 +619,147 @@
     margin-top: 8px;
 }
 
-.context-view-header {
+/* Context Sublist Styles */
+.context-sublist {
+    margin-left: 24px;
+    margin-top: 8px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border-color);
+}
+
+.context-subitem {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    border-radius: 3px;
+    gap: 8px;
+}
+
+.context-subitem .item-info {
+    margin-left: auto;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    white-space: nowrap;  /* Keep info on one line */
+}
+
+.context-subitem:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.context-item .item-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.context-item .item-path {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Drag and Drop Styles */
+.file-tree-item.draggable {
+    cursor: grab;
+}
+
+.file-tree-item.dragging {
+    opacity: 0.5;
+}
+
+.context-tag.drop-target {
+    transform: translateX(8px);
+    box-shadow: -4px 0 0 var(--accent-color);
+}
+
+.context-tag.drop-hover {
+    background: var(--accent-color);
+}
+
+/* Toast Styles */
+#toast-container {
+    position: fixed;
+    top: 20px;  /* Changed from bottom to top */
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    min-width: 200px;
+    padding: 12px 24px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 16px;
 }
 
-.context-view-header .context-count {
-    color: var(--text-secondary);
+.toast.success {
+    border-left: 4px solid var(--tag-green);
+}
+
+.toast.error {
+    border-left: 4px solid var(--tag-red);
+}
+
+.toast.warning {
+    border-left: 4px solid #f39c12;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast.removing {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+/* Near Mouse Toast */
+.toast-near-mouse {
+    position: fixed;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 4px;
+    border-left: 4px solid #f39c12;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     font-size: 0.9rem;
-    padding: 4px 8px;
-    background: var(--bg-tertiary);
-    border-radius: 12px;
+    pointer-events: none;
+    z-index: 10000;
+    animation: fadeInOut 1.5s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-10px); }  /* Changed direction */
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(10px); }  /* Changed direction */
 }

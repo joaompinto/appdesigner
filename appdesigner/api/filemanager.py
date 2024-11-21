@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple, Any
 from pathlib import Path
 import os
 import shutil
+import re
 
 router = APIRouter()
 
@@ -46,32 +47,53 @@ def get_relative_path(file_path: Path, base_dir: Path) -> str:
     except ValueError:
         return str(file_path)
 
-def scan_directory(base_dir: Path) -> List[Dict[str, Any]]:
+# Add token counting utility
+def estimate_tokens(text: str) -> int:
+    """Estimate token count using GPT tokenization rules."""
+    # Simple estimation: split on whitespace and punctuation
+    tokens = re.findall(r'\w+|[^\w\s]', text)
+    # Add 20% overhead for special tokens and subword tokenization
+    return int(len(tokens) * 1.2)
+
+def scan_directory(base_dir: Path, subpath: str = '') -> List[Dict[str, Any]]:
     """Recursively scan directory and return all files and directories."""
     results = []
-    for entry in base_dir.glob('**/*'):
-        if entry.name.startswith('.'):
-            continue
-        
-        rel_path = get_relative_path(entry, base_dir)
-        if entry.is_file() and is_text_file(str(entry)):
-            results.append({
-                "path": rel_path,
-                "name": entry.name,
-                "type": "file"
-            })
-        elif entry.is_dir():
-            results.append({
-                "path": rel_path,
-                "name": entry.name,
-                "type": "directory"
-            })
+    target_dir = base_dir / subpath if subpath else base_dir
+    
+    try:
+        for entry in target_dir.iterdir():  # Use iterdir() instead of glob
+            if entry.name.startswith('.'):
+                continue
+            
+            rel_path = get_relative_path(entry, base_dir)
+            if entry.is_file() and is_text_file(str(entry)):
+                success, content = read_file_safely(str(entry))
+                tokens = estimate_tokens(content) if success else 0
+                
+                results.append({
+                    "path": rel_path,
+                    "name": entry.name,
+                    "type": "file",
+                    "size": entry.stat().st_size,  # Add file size
+                    "tokens": tokens  # Add token count
+                })
+            elif entry.is_dir():
+                results.append({
+                    "path": rel_path,
+                    "name": entry.name,
+                    "type": "directory"
+                })
+    except Exception as e:
+        print(f"Error scanning directory {target_dir}: {e}")
+        return []
     
     return sorted(results, key=lambda x: (x['type'] != 'directory', x['path']))
 
 @router.get("/files")
-async def get_files() -> List[Dict[str, str]]:
-    """Get list of all files in the managed directory."""
+async def get_files(path: str = '') -> List[Dict[str, str]]:
+    """Get list of files in the managed directory or specified subdirectory."""
+    print(f"Scanning directory with path: {path}")  # Debug log
+    
     managed_dir = os.getenv('MANAGED_APP_DIR')
     if not managed_dir:
         raise HTTPException(status_code=500, detail="No managed directory configured")
@@ -80,10 +102,20 @@ async def get_files() -> List[Dict[str, str]]:
     if not base_dir.exists():
         raise HTTPException(status_code=404, detail="Managed directory not found")
 
-    return scan_directory(base_dir)
+    # If path is provided, validate it
+    if path:
+        target_dir = base_dir / path
+        if not target_dir.exists():
+            raise HTTPException(status_code=404, detail=f"Directory not found: {path}")
+        if not target_dir.is_dir():
+            raise HTTPException(status_code=400, detail=f"Path is not a directory: {path}")
+        if not str(target_dir).startswith(str(base_dir)):  # Security check
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    return scan_directory(base_dir, path)
 
 @router.get("/file")
-async def get_file(path: str) -> Dict[str, str]:
+async def get_file(path: str) -> Dict[str, Any]:
     """Get contents of a specific file."""
     managed_dir = os.getenv('MANAGED_APP_DIR')
     if not managed_dir:
@@ -100,7 +132,14 @@ async def get_file(path: str) -> Dict[str, str]:
     if not success:
         raise HTTPException(status_code=500, detail="Failed to read file")
     
-    return {"path": path, "content": content}
+    # Add file size to response
+    file_stat = file_path.stat()
+    return {
+        "path": path, 
+        "content": content,
+        "size": file_stat.st_size,
+        "tokens": estimate_tokens(content)  # Add token count
+    }
 
 class FileContent(BaseModel):
     content: str
