@@ -130,7 +130,7 @@ Question: {question}
 
 Provide a clear, concise answer about the files without modifying them."""
 
-    def process_user_instruction(self, instruction: str, counter: int, directory: Optional[Path] = None) -> Tuple[str, str]:
+    def process_user_instruction(self, instruction: str, counter: int, files: List[str], directory: Optional[Path] = None) -> Tuple[str, str]:
         try:
             if directory:
                 self.set_managed_directory(directory)
@@ -139,7 +139,12 @@ Provide a clear, concise answer about the files without modifying them."""
                 raise ValueError("No managed directory set")
 
             self.current_instruction = instruction
-            managed_files = self.file_manager.get_managed_files()
+            managed_files = {f: self.file_manager.get_file_content(f) for f in files}
+            
+            # Log files being sent to Claude
+            console.print("\n[yellow]Sending files to Claude:[/yellow]")
+            for filename in managed_files.keys():
+                console.print(f"  - {filename}")
             
             # Handle query mode (instructions starting with !)
             if instruction.startswith('!'):
@@ -218,12 +223,14 @@ agent = Agent()
 class InstructionRequest(BaseModel):
     instruction: str
     counter: int
+    files: List[str]  # Add files field
 
 class InstructionResponse(BaseModel):
     response: str
     rawOutput: str
     processingTime: float  # Add this field
 
+# Remove /api prefix from route paths
 @router.post("/process-user-instructions", response_model=InstructionResponse)
 async def process_instructions(request: InstructionRequest) -> Dict[str, Any]:
     try:
@@ -235,7 +242,11 @@ async def process_instructions(request: InstructionRequest) -> Dict[str, Any]:
                 raise ValueError("No managed directory configured")
             agent.set_managed_directory(Path(managed_dir))
             
-        response, raw_output = agent.process_user_instruction(request.instruction, request.counter)
+        response, raw_output = agent.process_user_instruction(
+            request.instruction, 
+            request.counter,
+            request.files  # Pass files to the method
+        )
         
         # Calculate processing time
         processing_time = round(time.time() - start_time, 2)
@@ -259,10 +270,19 @@ async def process_instructions(request: InstructionRequest) -> Dict[str, Any]:
             "processingTime": processing_time  # Add processing time to response
         }
     except Exception as e:
-        console.print(f"\n[bold red]Error:[/bold red] {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        if "overloaded" in error_msg.lower():
+            # Format overloaded error for frontend
+            return {
+                "response": f"Error: {error_msg}",
+                "rawOutput": "",
+                "processingTime": 0,
+                "error": True
+            }
+        console.print(f"\n[bold red]Error:[/bold red] {error_msg}")
+        raise HTTPException(status_code=500, detail=error_msg)
 
-@router.get("/api/history")
+@router.get("/history")
 async def get_history():
     """Get the file change history"""
     changes = history_manager.get_changes()
@@ -274,7 +294,7 @@ async def get_history():
     } for change in changes]
     return formatted_changes
 
-@router.get("/api/logs")
+@router.get("/logs")
 async def get_logs():
     """Get the complete logs"""
     try:
@@ -288,13 +308,13 @@ async def get_logs():
 
         # Get complete stdout content
         stdout_content = ""
-        if stdout_path.exists():
+        if (stdout_path.exists()):
             with open(stdout_path, 'r') as f:
                 stdout_content = f.read()
 
         # Get complete stderr content
         stderr_content = ""
-        if stderr_path.exists():
+        if (stderr_path.exists()):
             with open(stderr_path, 'r') as f:
                 stderr_content = f.read()
 

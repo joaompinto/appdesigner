@@ -1,19 +1,27 @@
 import os
+import json
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
+from fastapi import HTTPException
 
 class NoChangesFoundError(Exception):
     """Raised when no change instructions were found in the response."""
+    pass
+
+class FileManagerError(Exception):
+    """Base exception for FileManager errors."""
     pass
 
 class FileManager:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.managed_dir = None
+        self.contexts_file = None  # Add this line
 
     def set_managed_directory(self, directory: Path):
         """Set the directory containing managed files."""
         self.managed_dir = Path(directory)
+        self.contexts_file = self.managed_dir / "contexts.json"  # Add this line
 
     def get_managed_files(self, extensions=None) -> Dict[str, str]:
         """Get all managed files with their contents."""
@@ -120,6 +128,56 @@ class FileManager:
             raise NoChangesFoundError("No valid change instructions found")
 
         return instructions
+
+    def get_contexts_file(self) -> Path:
+        """Get the path to the contexts file in the managed directory."""
+        if not self.managed_dir:
+            raise ValueError("Managed directory not set")
+        return self.managed_dir / "contexts.json"
+
+    def load_contexts(self) -> Dict[str, Any]:
+        """Load contexts from JSON file."""
+        if not self.contexts_file or not self.contexts_file.exists():
+            return {}
+        
+        try:
+            with open(self.contexts_file, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            raise FileManagerError("Invalid contexts file format") from e
+        except Exception as e:
+            raise FileManagerError(f"Failed to load contexts: {str(e)}") from e
+
+    def save_contexts(self, contexts: Dict[str, Any]) -> None:
+        """Save contexts to JSON file."""
+        if not self.contexts_file:
+            raise FileManagerError("No contexts file path set")
+            
+        try:
+            with open(self.contexts_file, 'w') as f:
+                json.dump(contexts, f, indent=2)
+        except Exception as e:
+            raise FileManagerError(f"Failed to save contexts: {str(e)}") from e
+
+    def delete_contexts(self) -> None:
+        """Delete the contexts file."""
+        try:
+            if self.contexts_file and self.contexts_file.exists():
+                self.contexts_file.unlink()
+        except Exception as e:
+            raise FileManagerError(f"Failed to delete contexts: {str(e)}") from e
+
+    def get_file_content(self, filepath: str) -> str:
+        """Get content of a specific file from the managed directory."""
+        try:
+            full_path = self.managed_dir / filepath
+            if not full_path.exists():
+                raise FileNotFoundError(f"File '{filepath}' does not exist")
+            return full_path.read_text(encoding='utf-8')
+        except Exception as e:
+            if self.verbose:
+                print(f"Could not read file {filepath}: {e}")
+            raise FileManagerError(f"Error reading file {filepath}: {str(e)}")
 
 def read_file_safely(filepath: str) -> Tuple[bool, str]:
     """Try to read a file with different encodings, return success and content."""

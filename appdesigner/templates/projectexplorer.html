@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
     <link rel="stylesheet" href="{{ url_for('static', path='css/projectexplorer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/webconsole.css') }}">
+    <!-- Add marked.js before console -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="module" src="{{ url_for('static', path='lib/webconsole.js') }}"></script>
 </head>
 <body>
     <div class="container project-explorer">
@@ -55,9 +59,10 @@
                 <div class="editor-placeholder">Select a file or Context tag to view the content</div>
             </div>
         </div>
-        <div class="active-context-view" id="context-view">
+        <div class="active-context-column" id="context-view">
             <div class="context-content-wrapper">
                 <div class="context-view-header">
+                    <h2 id="context-title" class="context-title"></h2>
                     <div class="context-count" id="context-count">0 files</div>
                 </div>
                 <div class="empty-state" id="context-empty-state" style="display: none">
@@ -66,6 +71,9 @@
                     <p class="empty-hint">Drag and drop files from the file tree (bottom) or select another context tag</p>
                 </div>
                 <div class="context-items" id="context-items"></div>
+            </div>
+            <div class="context-console-wrapper">
+                <web-console class="context-console" id="context-console"></web-console>
             </div>
         </div>
         <div class="preview-column" id="preview-column" style="display: none">
@@ -116,8 +124,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/toml/toml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/mode/simple.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script type="module" src="{{ url_for('static', path='projectexplorer/editor.js') }}"></script>
-    <script type="module" src="{{ url_for('static', path='projectexplorer/filetree.js') }}"></script>
-    <script type="module" src="{{ url_for('static', path='projectexplorer/context.js') }}"></script>
+    
+    <!-- Update console script reference -->
+    <script type="module" src="{{ url_for('static', path='lib/webconsole.js') }}"></script>
+    
+    <!-- Main entry point only -->
+    <script type="module" src="{{ url_for('static', path='projectexplorer/projectexplorer.js') }}"></script>
 </body>
 </html>

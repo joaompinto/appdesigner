@@ -90,7 +90,7 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initializeEditorButtons() {
     const editButton = document.getElementById('edit-button');
     const saveButton = document.getElementById('save-button');
     const previewButton = document.getElementById('preview-button');
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300); // Match transition duration
         }
     });
-});
+}
 
 // Single export block with all needed exports
 export { 

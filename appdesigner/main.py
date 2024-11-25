@@ -34,11 +34,7 @@ async def health_check():
 async def favicon():
     return Response(content="")
 
-
-
-
-
-# Include the routers
-app.include_router(agent_router)
+# Include the routers with consistent /api prefix
+app.include_router(agent_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(filemanager_router, prefix="/api")

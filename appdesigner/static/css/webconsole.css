@@ -1,0 +1,171 @@
+/* Console Component Styles - These will be injected into shadow DOM */
+:host {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%; /* Change to 100% to fill parent */
+    flex: 1;  /* Add this to ensure it takes available space */
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #1e1e1e;
+    color: #e4e4e4;
+    box-sizing: border-box;
+}
+
+/* Console Core Styles */
+#console-output {
+    flex: 1 1 auto;  /* Change to flex: 1 1 auto */
+    min-height: 0;   /* Add this to ensure proper scrolling */
+    height: calc(100% - 36px); /* Change to use calc for exact height minus input */
+    max-height: none;  /* Remove max-height restriction */
+    width: 100%;
+    overflow-y: auto;
+    padding: 8px;
+    background: #1e1e1e;
+    color: #e4e4e4;
+    font-family: monospace;
+    box-sizing: border-box;
+    line-height: 1.4;
+    margin-bottom: 36px; /* Add margin to prevent overlap with input */
+}
+
+#console-input {
+    flex: 0 0 36px; /* Fixed height for input */
+    position: sticky; /* Change to sticky */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
+    padding: 8px 12px;
+    background: #252525;
+    border: none;
+    border-top: 1px solid #383838;
+    color: #e4e4e4;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.2;
+    height: 36px;
+    box-sizing: border-box;
+    z-index: 10; /* Ensure input stays above content */
+}
+
+/* Message Types */
+.message-system { 
+    color: #b4b4b4 !important; 
+}
+
+.message-error { 
+    color: #ff8080 !important; 
+}
+
+.message-command { 
+    color: #3794ff !important; 
+}
+
+.message-user {
+    color: #50fa7b !important;
+    font-weight: 500;
+}
+
+.timestamp { 
+    color: #808080 !important; 
+}
+
+/* Console Message Styles */
+.console-message {
+    padding: 4px 8px;
+    margin: 2px -8px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.console-message:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Special message styles */
+.message-overloaded {
+    color: #ffa500 !important;
+    padding: 8px;
+    border-left: 3px solid #ffa500;
+    background: rgba(255, 165, 0, 0.1);
+    margin: 8px 0;
+}
+
+/* File List in console */
+.file-list {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.file-item {
+    display: block;
+    padding: 2px 0 2px 20px;
+    color: #4ec9b0;
+    font-family: monospace;
+}
+
+.file-item::before {
+    content: "📄";
+    margin-right: 8px;
+    opacity: 0.8;
+}
+
+/* Action Buttons */
+.error-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+.retry-button {
+    background: #0078d4;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.retry-button:hover {
+    background: #0086e7;
+    transform: translateY(-1px);
+}
+
+.retry-button:active {
+    transform: translateY(0);
+}
+
+/* Remove all duplicates that appear in projectexplorer.css */
+.markdown-content,
+.web-console::part styles,
+.detailed-message,
+.expand-button,
+web-console .shortcut {
+    /* Remove these duplicate styles */
+}
+
+/* Remove copy button styles as they're now in the component */
+.copy-code-button {
+    /* Remove these styles */
+}
+
+/* Animation */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+

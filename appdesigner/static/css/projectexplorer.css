@@ -19,20 +19,22 @@
     --tag-gray: #5c5c5c;
 }
 
-/* Override container layout for project explorer */
-.container {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    height: 100vh;
-    overflow: hidden;
+/* Add dark background to root elements */
+html, body {
+    background: var(--bg-primary);
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary);
 }
 
-/* Container Layout */
+/* Override container layout for project explorer */
 .container.project-explorer {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    /* Update grid to handle both columns in the same space */
+    grid-template-columns: 300px minmax(0, 1fr);
     height: 100vh;
     overflow: hidden;
+    background: var(--bg-primary); /* Add background to container */
 }
 
 /* File Explorer Column */
@@ -55,20 +57,25 @@
 
 /* Tree Headers */
 .context-tree-header,
-.file-tree-header {
+.file-tree-header,
+.context-view-header {  /* Add context-view-header to share styles */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 8px 16px;  /* Match padding */
+    height: 40px;  /* Set fixed height for all headers */
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;  /* Add box-sizing to ensure consistent height */
 }
 
 .context-tree-header h2,
-.file-tree-header h2 {
+.file-tree-header h2,
+.context-view-header h2.context-title {  /* Add context-title to share styles */
     font-size: 0.9rem;
     color: var(--text-primary);
     margin: 0;
+    line-height: 1.2;  /* Add line-height for consistent text alignment */
 }
 
 /* Context Explorer Header Controls */
@@ -103,10 +110,18 @@
 
 /* File Content Column */
 .file-content-column {
-    flex: 1;
-    display: flex;
+    grid-column: 2;
+    display: none;
     flex-direction: column;
     background: var(--bg-secondary);
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    z-index: 2; /* Ensure it's above context elements */
+}
+
+.file-content-column.visible {
+    display: flex;
+    opacity: 1;
 }
 
 .file-content-header {
@@ -175,19 +190,53 @@
 }
 
 /* Context View Column */
-.active-context-view {
-    flex: 1;
-    background: var(--bg-secondary);
-    border-left: 1px solid var(--border-color);
-    display: none; /* Hidden by default */
+.active-context-column {
+    display: none;  /* Hidden by default */
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    grid-column: 2;  /* Add grid positioning */
 }
 
-/* Remove old context-view styles */
-/* .context-view { ... } */
+.active-context-column.visible { /* Add this class */
+    display: flex !important;  /* Force flex display */
+}
 
-/* Adjust the editor to accommodate the context view */
-.file-content-editor .CodeMirror {
-    flex: 1;
+/* Context Content and Console Layout */
+.context-content-wrapper {
+    flex: 0 0 50%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+    flex: 1 0 50%;
+    min-height: 0; /* Allow shrinking */
+}
+
+.context-console-wrapper {
+    flex: 1 1 50%;  /* Changed to use remaining 50% */
+    min-height: 0;  /* Allow shrinking */
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    border-top: 1px solid var(--border-color);
+    overflow: hidden;
+    flex: 1 0 50%;
+}
+
+/* Ensure context items scroll properly */
+.context-items {
+    flex: 1 1 auto;  /* Allow growing and shrinking */
+    overflow-y: auto;
+    overflow-x: hidden;  /* Hide horizontal scroll */
+    padding: 16px;  /* Remove padding-bottom, keep regular padding */
+    margin: 0;
+    border: none;
+    height: auto;  /* Let height be determined by content */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow shrinking */
 }
 
 /* Preview Column */
@@ -248,14 +297,6 @@
     padding: 4px 12px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
-}
-
-.breadcrumb-path {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .breadcrumb-item {
@@ -350,7 +391,7 @@
 .context-item .remove-button {
     background: rgba(255, 0, 0, 0.1);
     border: none;
-    color: var(--text-error);
+    color: var (--text-error);
     cursor: pointer;
     font-size: 0.85rem;  /* Reduced from 1rem */
     padding: 3px 6px;    /* Reduced from 4px 8px */
@@ -530,10 +571,18 @@
     top: 0;
     z-index: 10;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     padding: 8px 16px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
+}
+
+.context-view-header h2.context-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: normal;
+    color: var(--text-primary);
 }
 
 .context-view-header .context-count {
@@ -542,12 +591,6 @@
     padding: 4px 8px;
     background: var(--bg-tertiary);
     border-radius: 12px;
-}
-
-.context-content-wrapper {
-    padding: 0;
-    height: 100%;
-    overflow-y: auto;
 }
 
 .context-header {
@@ -572,51 +615,9 @@
     padding: 16px;
     margin: 0;
     border: none;
-    min-height: 100px; /* Ensure there's always a drop target */
-}
-
-.context-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    border-radius: 4px;
-    margin-bottom: 4px;
-    background: var(--bg-tertiary);
-}
-
-.context-item:hover {
-    background: var(--hover-color);
-}
-
-.item-path {
-    color: var(--text-primary);
-    font-family: monospace;
-    font-size: 0.9rem;
-}
-
-.item-icon {
-    margin-right: 8px;
-    font-size: 1.1rem;
-    opacity: 0.8;
-}
-
-.empty-state {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 32px 16px;
-}
-
-.empty-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.empty-hint {
-    font-size: 0.9rem;
-    font-style: italic;
-    margin-top: 8px;
+    min-height: 100px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* Context Sublist Styles */
@@ -650,18 +651,6 @@
 .context-subitem:hover {
     background: var(--bg-tertiary);
     color: var(--text-primary);
-}
-
-.context-item .item-content {
-    flex: 1;
-    overflow: hidden;
-}
-
-.context-item .item-path {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 /* Drag and Drop Styles */
@@ -762,4 +751,27 @@
     15% { opacity: 1; transform: translateY(0); }
     85% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(10px); }  /* Changed direction */
+}
+
+/* Add Markdown and Message Styles */
+.markdown-content,
+.copy-code-button,
+.message-system,
+.message-error,
+.message-command,
+.timestamp,
+.expand-button {
+    /* Remove these duplicate styles */
+}
+
+/* Remove all console-message related styles as they're now in webconsole.css */
+.console-message,
+.message-system,
+.message-error,
+.message-command,
+.message-user,
+.message-overloaded,
+.file-list,
+.file-item {
+    /* Remove these styles */
 }

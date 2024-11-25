@@ -25,18 +25,26 @@ class APIAgent:
         
         messages: List[MessageParam] = [{"role": "user", "content": prompt}]
         
-        response = self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=max_tokens,
-            system=self.system_prompt,
-            messages=messages
-        )
-        
-        response_text = response.content[0].text
-        
-        if VERBOSE:
-            console.print("\n[yellow]Claude Response:[/yellow]")
-            console.print(response_text)
-        
-        return response_text
+        try:
+            response = self.client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=max_tokens,
+                system=self.system_prompt,
+                messages=messages
+            )
+            
+            response_text = response.content[0].text
+            
+            if VERBOSE:
+                console.print("\n[yellow]Claude Response:[/yellow]")
+                console.print(response_text)
+            
+            return response_text
+            
+        except Exception as e:
+            # Check for overloaded error
+            error_str = str(e)
+            if "overloaded_error" in error_str or "Error code: 529" in error_str:
+                raise Exception("Claude API is currently overloaded. Please try again in a few moments.")
+            raise e
 

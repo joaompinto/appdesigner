@@ -1,12 +1,28 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
 from pathlib import Path
 import os
+import json
 import shutil
 import re
+import sys
+from filemanager import FileManager, FileManagerError
 
 router = APIRouter()
+
+def log_error(msg: str, exc: Exception = None):
+    """Log error message to stderr with optional exception details."""
+    error_msg = f"ERROR: {msg}"
+    if exc:
+        error_msg += f" - {type(exc).__name__}: {str(exc)}"
+    print(error_msg, file=sys.stderr)
+
+# Initialize FileManager with managed directory
+file_manager = FileManager()
+managed_dir = os.getenv('MANAGED_APP_DIR')
+if managed_dir:
+    file_manager.set_managed_directory(Path(managed_dir))
 
 # File utilities
 def read_file_safely(filepath: str) -> Tuple[bool, str]:
@@ -208,3 +224,89 @@ async def create_directory(path: str) -> Dict[str, str]:
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create directory: {str(e)}")
+
+class ContextData(BaseModel):
+    contexts: Dict[str, Any]
+
+# Add context management routes
+@router.get("/contexts")
+async def get_contexts() -> Dict[str, Any]:
+    """Get all saved contexts."""
+    if not managed_dir:
+        raise HTTPException(status_code=500, detail="No managed directory configured")
+    try:
+        return file_manager.load_contexts()
+    except FileManagerError as e:
+        error_detail = {
+            "error": "Failed to load contexts",
+            "type": type(e).__name__,
+            "message": str(e),
+            "location": "get_contexts"
+        }
+        log_error("Failed to load contexts", e)
+        raise HTTPException(status_code=500, detail=error_detail)
+    except Exception as e:
+        error_detail = {
+            "error": "Unexpected error loading contexts",
+            "type": type(e).__name__,
+            "message": str(e),
+            "location": "get_contexts"
+        }
+        log_error("Unexpected error in get_contexts", e)
+        raise HTTPException(status_code=500, detail=error_detail)
+
+@router.post("/contexts")
+async def update_contexts(data: ContextData) -> Dict[str, str]:
+    """Update saved contexts."""
+    if not managed_dir:
+        raise HTTPException(status_code=500, detail="No managed directory configured")
+    try:
+        contexts = {}
+        base_dir = Path(managed_dir)
+        
+        for name, context in data.contexts.items():
+            # Convert items to list and add type information
+            items_with_types = []
+            for item in context.get('items', []):
+                item_path = base_dir / item
+                item_type = 'directory' if item_path.is_dir() else 'file'
+                items_with_types.append({
+                    'path': item,
+                    'type': item_type
+                })
+            
+            contexts[name] = {
+                **context,
+                'items': items_with_types
+            }
+            
+        file_manager.save_contexts(contexts)
+        return {"status": "success", "message": "Contexts saved successfully"}
+    except Exception as e:
+        error_detail = {
+            "error": "Failed to save contexts",
+            "type": type(e).__name__,
+            "message": str(e),
+            "location": "update_contexts",
+            "context_count": len(data.contexts) if data.contexts else 0
+        }
+        log_error("Failed to save contexts", e)
+        raise HTTPException(status_code=500, detail=error_detail)
+
+@router.delete("/contexts")
+async def delete_contexts() -> Dict[str, str]:
+    """Delete all saved contexts."""
+    if not managed_dir:
+        raise HTTPException(status_code=500, detail="No managed directory configured")
+    try:
+        file_manager.delete_contexts()
+        return {"status": "success", "message": "Contexts deleted successfully"}
+    except Exception as e:
+        error_detail = {
+            "error": "Failed to delete contexts",
+            "type": type(e).__name__,
+            "message": str(e),
+            "location": "delete_contexts"
+        }
+        log_error("Failed to delete contexts", e)
+        raise HTTPException(status_code=500, detail=error_detail)

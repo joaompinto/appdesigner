@@ -1,6 +1,7 @@
 import { getLanguageFromPath, createEditor, updateEditorMode, showToast } from './editor.js';
 const { marked } = window;
-import { contextItems } from './context.js';  // Remove addToContext since it's not used
+import { contextItems, formatTokens } from './context.js';  // Import formatTokens instead of defining it here
+import { toggleVisibleColumn } from './columnmanager.js';
 
 let currentPath = '';
 let selectedFile = null;
@@ -186,21 +187,22 @@ function clearFileSelection() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const editButton = document.getElementById('edit-button');
-    const saveButton = document.getElementById('save-button');
-    const previewButton = document.getElementById('preview-button');
-    
-    // File tree click handler
+function initializeFileTree() {
     document.getElementById('file-tree').addEventListener('click', async (e) => {
         const fileItem = e.target.closest('.file-tree-item');
         if (!fileItem) return;
 
-        // Clear any active context
-        document.querySelectorAll('.context-folder').forEach(folder => {
-            folder.classList.remove('active');
+        // Only handle files, not directories
+        if (!fileItem.classList.contains('file')) return;
+
+        // Ensure we toggle to file view and hide context view
+        toggleVisibleColumn('file');
+        
+        // Clear any active context and remove highlighting
+        document.querySelectorAll('.context-tag').forEach(tag => {
+            tag.classList.remove('active');
         });
-        window.currentContext = null;  // Use window.currentContext
+        window.currentContext = null;
 
         selectedFile = fileItem.dataset.path;
 
@@ -210,61 +212,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         fileItem.classList.add('selected');
 
-        // Reset editor state only for files
-        const isFile = fileItem.classList.contains('file');
-        if (isFile) {
-            window.isEditMode = false;
-            window.hasUnsavedChanges = false;
+        // Reset editor state
+        window.isEditMode = false;
+        window.hasUnsavedChanges = false;
+        
+        // Show toolbar and update header
+        const toolbar = document.querySelector('.content-toolbar');
+        toolbar.classList.remove('toolbar-hidden');
+        
+        const filename = fileItem.dataset.path;
+        document.getElementById('current-file').textContent = filename;
+        document.getElementById('edit-button').style.display = 'block';
             
-            // Show toolbar and update header
-            document.querySelector('.content-toolbar').classList.remove('toolbar-hidden');
-            const filename = fileItem.dataset.path;
-            document.getElementById('current-file').textContent = filename;
-            editButton.style.display = 'block';
+        try {
+            const response = await fetch(`/api/file?path=${encodeURIComponent(filename)}`);
+            if (!response.ok) throw new Error('Failed to load file');
             
-            try {
-                const response = await fetch(`/api/file?path=${encodeURIComponent(filename)}`);
-                const data = await response.json();
+            const data = await response.json();
+            
+            if (data.content !== undefined) {
+                const contentElement = document.getElementById('file-content');
+                contentElement.innerHTML = ''; // Clear previous content
+                const language = getLanguageFromPath(filename);
+                createEditor(contentElement, data.content, language, true);
+                updateEditorMode(true);
                 
-                if (data.content) {
-                    const contentElement = document.getElementById('file-content');
-                    const language = getLanguageFromPath(filename);
-                    createEditor(contentElement, data.content, language, true);
-                    updateEditorMode(true);  // Ensure readonly mode
-                    
-                    // Update token count in header if needed
-                    const fileHeader = document.getElementById('current-file');
-                    if (data.tokens !== undefined) {
-                        fileHeader.textContent = `${filename} (${formatTokens(data.tokens)})`;
-                    }
+                // Hide placeholder if exists
+                const placeholder = contentElement.querySelector('.editor-placeholder');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
                 }
-            } catch (error) {
-                console.error('Error loading file:', error);
-                document.getElementById('file-content').innerHTML = 
-                    `<div class="error-message">Error loading file: ${error.message}</div>`;
+            } else {
+                throw new Error('Invalid file content');
             }
-
-            const isMarkdown = filename.toLowerCase().endsWith('.md');
-            previewButton.style.display = isMarkdown ? 'block' : 'none';
-            if (!isMarkdown) {
-                window.isPreviewMode = false;
-                previewButton.classList.remove('active');
-                document.querySelector('.container').classList.remove('preview-active');
-                document.getElementById('preview-column').style.display = 'none';
-            } else if (window.isPreviewMode) {
-                // Refresh preview content for markdown files
-                const previewContent = document.getElementById('preview-content');
-                previewContent.innerHTML = marked.parse(window.editor.getValue());
-            }
-
-            // Show file content column and hide context view
-            document.querySelector('.file-content-column').style.display = 'flex';
-            document.getElementById('context-view').style.display = 'none';
-        } else {
-            // For directories, hide toolbar and buttons
-            document.querySelector('.content-toolbar').classList.add('toolbar-hidden');
-            editButton.style.display = 'none';
-            saveButton.style.display = 'none';
+        } catch (error) {
+            console.error('Error loading file:', error);
+            document.getElementById('file-content').innerHTML = 
+                `<div class="error-message">Error loading file: ${error.message}</div>`;
+            showToast(error.message, 'error');
         }
     });
 
@@ -281,10 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateToDirectory(path);
         }
     });
-
-    // Initial file tree load
-    loadFileTree();
-});
+}
 
 // Remove the old drag event setup from setupDragAndDrop
 
@@ -294,5 +276,6 @@ export {
     loadFileTree,
     resetFileExplorer,
     currentPath,
-    clearFileSelection
+    clearFileSelection,
+    initializeFileTree
 };
